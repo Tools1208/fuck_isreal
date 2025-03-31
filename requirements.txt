@@ -1,1 +1,5 @@
-
+lolcat
+requests
+scapy
+python-nmap
+beautifulsoup4
