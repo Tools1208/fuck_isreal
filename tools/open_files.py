@@ -1,119 +1,148 @@
-# tools/password_cracker.py
+# tools/open_files.py
 import os
+import sys
 import time
 import itertools
 import multiprocessing
-import logging
 from tqdm import tqdm
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.fernet import Fernet, InvalidToken
 
-class PasswordCracker:
-    def __init__(self, file_path, wordlist=None, hash_algo='SHA256',
-                 iterations=500000, threads=os.cpu_count()):
-        self.file_path = file_path
-        self.wordlist = wordlist
-        self.hash_algo = getattr(hashes, hash_algo.upper(), hashes.SHA256)()
-        self.iterations = iterations
-        self.threads = threads
-        self.load_encrypted_data()
+def run():
+    """Main interface for the password cracking tool"""
+    print("\033[1;36m=== Advanced Password Cracker v2.1 ===\033[0m")
+    file_path = input("Enter encrypted file path: ").strip()
+    
+    if not os.path.exists(file_path):
+        print("\033[1;31m[!] File not found\033[0m")
+        return
 
-    def load_encrypted_data(self):
+    wordlist = input("Wordlist path (press enter to skip): ").strip()
+    hash_algo = input("Hash algorithm [SHA256/SHA512] (default: SHA256): ").upper() or 'SHA256'
+    iterations = int(input("PBKDF2 iterations (default: 500000): ") or 500000)
+    threads = int(input(f"Threads (default: {os.cpu_count()}): ") or os.cpu_count())
+
+    try:
+        result = crack_file(
+            file_path=file_path,
+            wordlist=wordlist,
+            hash_algo=hash_algo,
+            iterations=iterations,
+            threads=threads
+        )
+        
+        if result:
+            print(f"\n\033[1;32m[+] Password found: {result[0]}\033[0m")
+            with open("decrypted_data.bin", "wb") as f:
+                f.write(result[1])
+            print(f"[+] Decrypted data saved to {os.path.abspath('decrypted_data.bin')}")
+        else:
+            print("\n\033[1;31m[-] Password not found\033[0m")
+            
+    except KeyboardInterrupt:
+        print("\n\033[1;31m[-] Attack aborted by user\033[0m")
+    except Exception as e:
+        print(f"\033[1;31m[!] Error: {str(e)}\033[0m")
+
+def crack_file(file_path, wordlist=None, hash_algo='SHA256', 
+               iterations=500000, threads=os.cpu_count()):
+    """Core cracking function with multiprocessing"""
+    with open(file_path, 'rb') as f:
+        data = f.read()
+    salt = data[:16]
+    encrypted_data = data[16:]
+
+    # Set up multiprocessing
+    manager = multiprocessing.Manager()
+    candidate_queue = manager.Queue(maxsize=threads*2)
+    result_queue = manager.Queue()
+
+    # Create process pool
+    pool = multiprocessing.Pool(
+        processes=threads,
+        initializer=worker,
+        initargs=(salt, encrypted_data, hash_algo, iterations, candidate_queue, result_queue)
+    )
+
+    # Start candidate feeder
+    feeder = multiprocessing.Process(
+        target=feed_candidates,
+        args=(candidate_queue, wordlist)
+    )
+    feeder.start()
+
+    try:
+        with tqdm(desc="Progress", unit=" attempts") as pbar:
+            while True:
+                result = result_queue.get()
+                
+                if result and result[0] == 'success':
+                    pool.terminate()
+                    return (result[1], result[2])
+                    
+                pbar.update()
+                
+    except KeyboardInterrupt:
+        pool.terminate()
+        raise
+    finally:
+        pool.close()
+        pool.join()
+        feeder.join()
+
+def worker(salt, encrypted_data, hash_algo, iterations, candidate_queue, result_queue):
+    """Multiprocessing worker for decryption attempts"""
+    backend = default_backend()
+    hash_class = getattr(hashes, hash_algo.upper(), hashes.SHA256)
+    
+    kdf = PBKDF2HMAC(
+        algorithm=hash_class(),
+        length=32,
+        salt=salt,
+        iterations=iterations,
+        backend=backend
+    )
+    
+    while True:
+        pwd = candidate_queue.get()
+        if pwd is None:
+            break
+            
         try:
-            with open(self.file_path, 'rb') as f:
-                data = f.read()
-            self.salt = data[:16]
-            self.encrypted_data = data[16:]
+            key = kdf.derive(pwd.encode())
+            cipher = Fernet(key)
+            decrypted = cipher.decrypt(encrypted_data)
+            result_queue.put(('success', pwd, decrypted))
+            return
+        except InvalidToken:
+            continue
         except Exception as e:
-            raise ValueError(f"File error: {str(e)}")
+            result_queue.put(('error', str(e)))
 
-    def generate_candidates(self):
-        # Wordlist attack
-        if self.wordlist and os.path.exists(self.wordlist):
-            with open(self.wordlist, 'r', encoding='latin-1') as f:
-                yield from (line.strip() for line in f)
+def feed_candidates(queue, wordlist=None):
+    """Generate and feed password candidates"""
+    # Phase 1: Wordlist attack
+    if wordlist and os.path.exists(wordlist):
+        with open(wordlist, 'r', encoding='latin-1') as f:
+            for line in f:
+                queue.put(line.strip())
+    
+    # Phase 2: Hybrid attack
+    seasons = ['Spring', 'Summer', 'Fall', 'Winter']
+    current_year = time.localtime().tm_year
+    for year in range(current_year-3, current_year+1):
+        queue.put(f"Admin{year}!")
+        queue.put(f"Pass{year}@")
+        queue.put(f"{seasons[(year//3)%4]}{year}")
 
-        # Hybrid attack patterns
-        seasons = ['Spring', 'Summer', 'Fall', 'Winter']
-        current_year = time.localtime().tm_year
-        for year in range(current_year-3, current_year+1):
-            yield from (f"{season}{year}" for season in seasons)
-            yield from (f"Admin{year}!", f"Pass{year}@", f"Password{year}#")
-
-        # Brute-force attack
-        charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"
-        for length in range(1, 8):
-            yield from (''.join(chars) for chars in itertools.product(charset, repeat=length))
-
-    def worker(self, candidate_queue, result_queue):
-        backend = default_backend()
-        while True:
-            pwd = candidate_queue.get()
-            if pwd is None:
-                break
-
-            try:
-                kdf = PBKDF2HMAC(
-                    algorithm=self.hash_algo,
-                    length=32,
-                    salt=self.salt,
-                    iterations=self.iterations,
-                    backend=backend
-                )
-                key = kdf.derive(pwd.encode())
-                cipher = Fernet(key)
-                decrypted = cipher.decrypt(self.encrypted_data)
-                result_queue.put(('success', pwd, decrypted))
-                return
-            except InvalidToken:
-                continue
-            except Exception as e:
-                result_queue.put(('error', str(e)))
-
-    def start(self):
-        start_time = time.time()
-        manager = multiprocessing.Manager()
-        candidate_queue = manager.Queue(maxsize=self.threads*2)
-        result_queue = manager.Queue()
-
-        pool = multiprocessing.Pool(
-            processes=self.threads,
-            initializer=self.worker,
-            initargs=(candidate_queue, result_queue)
-        )
-
-        feeder = multiprocessing.Process(
-            target=self._feed_candidates,
-            args=(candidate_queue,)
-        )
-        feeder.start()
-
-        try:
-            with tqdm(desc="Progress", unit=" attempts") as pbar:
-                while True:
-                    result = result_queue.get()
-
-                    if result[0] == 'success':
-                        pool.terminate()
-                        elapsed = time.time() - start_time
-                        return f"Password found: {result[1]} in {elapsed:.2f}s"
-                    elif result[0] == 'error':
-                        logging.error(result[1])
-
-                    pbar.update()
-
-        except KeyboardInterrupt:
-            pool.terminate()
-            return "Attack aborted"
-        finally:
-            pool.close()
-            pool.join()
-            feeder.join()
-
-    def _feed_candidates(self, queue):
-        for candidate in self.generate_candidates():
-            queue.put(candidate)
-        for _ in range(self.threads):
-            queue.put(None)
+    # Phase 3: Brute-force attack
+    charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"
+    for length in range(1, 7):  # Up to 6 characters
+        for chars in itertools.product(charset, repeat=length):
+            queue.put(''.join(chars))
+    
+    # Send poison pills
+    for _ in range(multiprocessing.cpu_count()):
+        queue.put(None)
