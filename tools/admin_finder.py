@@ -15,7 +15,7 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 # Constants
-VERSION = "6.2 Advanced"
+VERSION = "6.3 Advanced"
 DEFAULT_WORDLIST = "admin_paths.txt"
 DEFAULT_PATHS = [
     "admin", "administrator", "login", "wp-admin", "admin.php",
@@ -152,90 +152,155 @@ def scan_worker(url, proxy, delay, paths, results, progress):
     for _ in range(25):
         queue.put(None)
     for thread in threads:
-        thread.join()
 
-def run():
-    """Main execution function with menu integration"""
-    create_default_wordlist()
-    
-    display_banner()
-    print(f"""
-{Colors.INFO}[1]{Colors.RESET} Start Global Admin Scan
-{Colors.WARNING}[99]{Colors.RESET} Return to Main Menu
-    """.strip())
-    
-    choice = input(f"\n{Colors.BOLD}Select option: {Colors.RESET}").strip()
-    if choice == '99':
-        print(f"{Colors.INFO}[i] Returning to main menu...")
-        return
-    
-    if choice != '1':
-        print(f"{Colors.ERROR}[!] Invalid option selected")
-        sleep(2)
-        return run()
 
-    target = input(f"\n{Colors.INFO}[+] Target (e.g., example.com): {Colors.RESET}").strip()
-    proxy = input(f"{Colors.INFO}[+] Proxy (http-1.2.3.4:8080): {Colors.RESET}").strip()
-    delay = input(f"{Colors.INFO}[+] Request delay (seconds) [0]: {Colors.RESET}").strip() or '0'
-    wordlist = input(f"{Colors.INFO}[+] Wordlist [Press Enter for default]: {Colors.RESET}").strip()
-    
-    try:
-        delay = int(delay)
-        if delay < 0:
-            raise ValueError
-    except ValueError:
-        print(f"{Colors.ERROR}[!] Delay must be a positive integer")
-        sleep(2)
-        return run()
-    
-    paths = load_wordlist(wordlist)
-    if not paths:
-        return run()
-    
-    proxy_dict = None
-    if proxy:
-        try:
-            proto, addr = proxy.split('-', 1)
-            proxy_dict = {proto: addr}
-        except ValueError:
-            print(f"{Colors.ERROR}[!] Invalid proxy format. Example: http-1.2.3.4:8080")
-            sleep(2)
-            return run()
-    
-    validated_url = validate_url(target)
-    if not validated_url:
-        print(f"{Colors.ERROR}[!] Invalid target URL")
-        sleep(2)
-        return run()
-    
-    global_variants = generate_global_variants(validated_url)
-    print(f"\n{Colors.INFO}[i] Generated {len(global_variants)} global variants")
-    
-    results = []
-    total_requests = len(global_variants) * len(paths)
-    progress = tqdm(
-        total=total_requests,
-        unit="req",
-        desc=f"{Colors.INFO}Progress",
-        dynamic_ncols=True,
-        bar_format="{l_bar}%s{bar}%s{r_bar}" % (Colors.INFO, Colors.RESET)
-    )
-    
-    for url in global_variants:
-        scan_worker(url, proxy_dict, delay, paths, results, progress)
-    
-    progress.close()
-    
-    print(f"\n{Colors.BOLD}{'='*60}")
-    if results:
-        print(f"{Colors.SUCCESS}[+] Found {len(results)} admin panels:")
-        for url, status in results:
-            print(f"  {Colors.WARNING}-{Colors.RESET} {url} (Status: {status})")
-    else:
-        print(f"{Colors.ERROR}[!] No admin panels found")
-    
-    input(f"\n{Colors.INFO}Press Enter to return to main menu...")
-    return  # Return control to main.py
+   
+init
+1ize open()
+10color 'RED
+1m # -*-main():
+   
+    import 'tools'HEADER = 'Enter
+   __import socket.setdefault__init__()
+    'Enter('tools =main()
+    # Add missing('tools
+ 'i]missing('1ize
+import socket  'tools.add
+    '9main()import os
+import sys   system('tools:main:    # noqa
+main():
+name__main__name__name__main__()
+name__init__()
+    __name__import__name__import__name__main__()
 
-if __name__ == "__main__":
-    run()
+
+main__name__import__import__init__name__import__name__main__name__main__()
+    print(fname__main__name = main()
+import__main__name__import traceback
+    import socket:main__name__main__()
+
+import traceback__
+name__import sys.stdin
+    import os.system if main__name__import sysimport os
+__name__name__main__name__main__name__main__name__import traceback
+ sys.path.append__main__name import sys.stderr__name__import sys.name__main__name__main__()
+    import traceback__main__()
+import sys.__name__import sys.stdin
+   __name__main__name__main__init:
+import os
+ main__name__main__import os.environ__main__name__name__main__()
+ asmain__name = 'main__name__main__()
+import sys.stdin()
+   import traceback__
+name__import sys.path.append
+__main__name__main__()
+import sys.stdin__name__import os.system
+1__main__()
+__name__main__name__import sys.path.append os.system__name__main__name__import sys.stdin__import sys.path = 'main__name__import traceback__name__name__main__name__main__()
+import sysname__main__import traceback
+ sysname__main__main__name:main__name__name__main__name__main__name__main__name__import sys.stdin
+__name__import sysname__name__main__name__main__name__name__main__name__name__name__import sys.stdin__main__name__main__name__main__name__init__name__import sys.stdin__name__main__name__name__main__name__main__name__main__name="User__name__name__main__name__import sys.stdin__name__main__name__init__name__main__import traceback__name__name__import traceback__
+name__main__name__main__import traceback__main__name__main__import traceback__main__name__main__name__main__name__import tqdm.write__main__()
+
+__name__import traceback__main__name__main__()
+__name__import sys.modules
+    import traceback
+ sys.modules__name__main__name__main__name__main__name__main__name__main__name__import traceback__
+name__main__name__main__name__name__main__name__main__name__file    __name__main__name__main__import traceback__main__name__main__name__import sys.stdin__name__import os
+__main__()
+__name__name__main__name__name__init__name__import traceback__main__name__main__name__main__name__main__name__name__import traceback__name__main__name__main__import__main__name__import traceback__main__name__main__name__import__main__name__main__main__name__main__name__import os
+
+__main__name__main__name__import traceback__main__name__import traceback__name__main__name__main__name__main__name__import traceback__name__import traceback()
+name__main__name__main__name__import traceback__name__import traceback__main__import traceback__main__name__main__import traceback__name__import traceback__name__import traceback__
+name__main__()
+__name__import traceback__main__name__import traceback__name__main__main__name__import traceback__
+main__()
+name__name__main__name__name__main__name__main__name__main__name__import traceback__name__main__import traceback__main__main__name__main__name__import traceback__import os
+__main__import traceback__main__import traceback__name__import tqdm__import traceback__import traceback__main__import traceback__main__import sys.modules
+__main__import traceback__
+name__name__main__name__import traceback__main__import traceback__main__import traceback__main__import traceback__import traceback__main__import sys.path__import__main__name__import traceback__main__import traceback__import sys.modules__import sys.stdin__main__name__import sys.stdin__import traceback__name__import sys.stdin__main__import__main__name__file__main__main__name__import traceback__main__import sys.modules__import__import sys.stdin__name__main__import__main__name__main__import sys.stdin__main__main__main__import sys.stdin__main__()
+import traceback__
+import os.system__main__import traceback__
+
+main__import sys.stdin__main__import traceback__main__import traceback__main__name__file__import traceback__
+import sys.path__main__import traceback__main__import traceback__import sys.stdin__import__main__name__import traceback__import sys.path.exists__import sys
+__import sys__import__main__import traceback__name__import sys.stdin__main__import sys.stderr__init__import__main__name__main__name__import sys.stdin__import traceback__import sys.stdin__main__main__import traceback__import traceback__import sys.stdin__main__import traceback__
+name__import sys.path__main__name__main__import traceback__name__main__name__import sys.stdin as sys.path__main__import sys.stdin__name__main__import sys.stdin__import traceback__init__import traceback__import sys.stdin__import traceback__main__import sys.stdin__import sys.stdin__name__import traceback__
+name__import sys.path__main__import traceback__import sys.stdin__import sys.path__import sys
+_pathimport sys.path__import sys.stdin__import traceback__main__import traceback__main__import os
+__main__import sys.stdin__name__import traceback__name__main__name__import sys.path__import os.system__main__import traceback__main__import sys.path.expand__name__import traceback__main__name__import sys.stdin__main__    print(fname__main__main__import traceback__
+file__main__import traceback__
+name__import sys.stdin::main__main__name__main__name__main__main__name__import__main__import sys.path__main__name__main__name__main__import traceback__name__main__name__main__main__name__import traceback__main__name__main__import traceback__
+name__import sys.stdin__main__import traceback__
+import sys.stdin__main__import traceback__main__import sys.path__import traceback__name__import sys.pathimport traceback__
+file__name__main__name__main__import traceback__
+main__import os
+__main__import sys.path__import sys.path
+__main__name__main__name__import traceback__main__import sys.stdin__main__main__import os.environ__main__import traceback__main__import traceback__name__main__import traceback__
+name__import __main__import sys.stdin__main__import sys.stdin::main__main__import traceback__import sys.path__import sys.path__import sys.path
+__import traceback__main__import sys.stdin__name__main__main__import sys.path__main__main__import traceback__
+main__name__main__import traceback__
+main__main__name__main__name__main__import sys__import os
+__main__()
+__main__main__import traceback__import sys.path
+__import sys.path__main__main__main__import traceback__main__main__main__main__import sys.path import traceback__import__name__name__main__import traceback__main__import sys.path__main__import traceback__main__name__import sys.stdin__import sys.stdin__import traceback__main__main__import sys.path
+__main__import traceback__import sys.stdin__name__main__main__import sys.pathlibimport sys.stdin__main__name__import sys.path__main__name__import traceback__import sys.stdin__main__main__import sys.stdin__main__import sys.stdin__name__import sys.path__main__main__main__main__name__main__import traceback__main__import traceback__main__main__main__import traceback__main__import traceback__import sys.stdin__import__name__import traceback__import sys.stdin__main__import sys.stdin__main__import__main__import traceback__import sys.stdin__import__main__main__import sys.path__import traceback__main__main__import sys.stdin__main__import__import sys__main__main__import sys.path__import sys.path__import traceback__main__import traceback__main__import traceback__
+import sys.path__main__import sys.stdin__import traceback__main__import traceback__import__import__main__main__import sys.stdin__main__main__main__import__name__main__name__import traceback__main__import sys.path__import__name__import traceback__main__main__import__init__main__import traceback__import__import sys.stdin__main__import sys__import__import__import__import os.system__main__main__import sys.path__main__main__name__main__import__import sys__import traceback__import__main__import__name__name__main__import traceback__main__main__main__name__import__main__import traceback__import __main__import sys.path__main__import sys.path__main__import sys.path__main__main__import traceback__main__main__import traceback__main__name__main__import sys.path__main__name__init__import os.system__import traceback__main__import traceback__
+name__import sys.path__import__main__import__main__import traceback__name__import__main__main__main__import traceback__main__import sys.stdin__import sys.path__main__main__import traceback__main__import sys.path__import sys.stdin__main__import traceback__main__import sys.stdin__main__import sys.stdin__name__import sys.stdin__main__import traceback__main__import sys.stdin__import sys.stdin__import traceback__main__import sys__main__import sys.path__import traceback__import__main__import sys__import sys__main__import traceback__main__    import traceback__main__import sys.stdin__main__main__import sys.path__main__import__name__main__import sys.path__main__import traceback__import__import sys.path__import sys.path__import__import sys.path__import__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.stdin__main__import sys__import sys.stdin asname__main__import sys.path__import sys.path__
+import__import sys.path__main__import sys.path__main__import sys.path__main__import sys.path__import sys.path__main__import sys.stdin::main__main__main__import sys.path__import sys.path__import sys.path__import sys.stdin__name__import sys.path__import sys.path__init__main__name__import traceback__main__import sys.path__import sys.path__import__main__import sys.path
+
+__main__import sys.path__import sys.path__main__import sys.path__main__main__import sys.path__import sys.path__import sys.stdin__name__import__main__import sys.path__import traceback__import sys.stdin__import sys.path__import traceback__import os
+import sys
+import traceback__import sys.path__import sys.stdin__import traceback__import sys.path__import traceback__
+import sys.path__import sys.path
+ sys.path__import sys.path
+__main__import sys.path__main__file__main__import sys.path
+ os.system__import sys.path__import sys.path
+__main__main__import sys.path__import sys.path__
+main__main__import sys.path__import sys.path__import traceback__import sys.path__main__import sys.path__import sys.path__import sys.stdin__import sys.path
+__import traceback__import sys.path__import sys.path__import sys.path__import sys.path__main__import sys.stdin__import sys.path__import sys.path__init__name__import sysmain__import sys.path.join __main__main__import sys.stdin__import sys.path__import sys.path__import sys.path__import sys.path
+import traceback__import sys.path__import sys.path__import os
+__import sys.path__import sys.stdin__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path
+__import sys.path__name__import traceback__main__import sys.path__import sys.path__main__main__name__main__import sys.path__import traceback__main__main__import sys.path__name__import__main__import sys.path__main__import traceback__main__import sys__import traceback__main__import sys.path__import os
+__import sys.stderr__import sys.path__main__import sys.path__import sys.path__main__main__main__import traceback__import sys.path__main__import sys.path__import sys.path__main__import sys.path__name__import sys.path__main__import__name__main__main__import sys.path__main__main__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__name__main__import sys.path__main__main__import __main__main__main__main__main__import traceback__main__import sys.__main__import sys.path__import sys.path__import sys.path()
+
+__import traceback__
+import sys.path__main__main__main__import sys.path__main__name__main__import sys.path__import sys.path__import sys.path__main__import sys.path__name__main__import traceback__import sys.path__main__import sys.path__main__import traceback__main__import sys.path__main__import sys.path__main__main__import sys.path__main__import sys.path__main__import sys.path__import sysimport sys.path__import sys__import traceback__main__import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__main__main__import sys.path__import sys.path__name__main__import sys.path__import sys.path__main__name__import sys.path__import sys.path__import traceback__
+import sys.path__name__main__name__import traceback__name__main__import sys.path__main__import traceback__main__import sys.path__main__import traceback__import sys.path__name__import sys.path__main__main__import sys.path__import sys.path__main__import traceback__main__import sys.path__main__import traceback__main__import traceback__import sys.path__main__import traceback__import__import traceback__import sys.path__main__import sys.path__import traceback__name__import sys.path__name__import sys.path__import sys.path__main__import sys.path__import traceback__
+
+import sys.path__main__()
+
+import sys.path__import sys.path__main__name__import sys.path__import sys.path__main__import sys.path__import sys.path__main__import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__name__import sys.path__name__import sys.path__import sys.path__name__main__import sys.path__name__import sys.path__main__import traceback__import sys.path__import sys.path__main__import traceback__name__import sys.path__import traceback__import sys.path__import sys.path__import os.system__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__main__import sys.path__import sys.path__import traceback__import os.environ__import sys.path__import traceback__import sys.path__name__main__import sys.path__import os
+__import traceback__name__import sys.path__name__import sys.path__import sys.path__import__import sys.path__main__import sys.path__import sys.path__import__import traceback__import sys.path__import sys.path__main__import sys__import sys.path__import__import sysimport sys.path__import sys.path__import sys.path__import sys__import traceback__name__import sys.path__main__import sys.path__import sys.path
+__main__import sys.path__import sys.path__import os
+
+__main__import sys.path__import sys.path__main__import sys.st__name__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__main__main__import sysimport sysimport sys.path__import sys.path__import sys.path__import__name__import sys.path__main__import sys.path__import sys.path__main__main__import sys.path__import sys.path
+__import sys.path__main__import sys.path__import os
+__main__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__
+    import traceback__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import traceback__import sys.path__import sys.path__import traceback__main__import__import traceback__import traceback__main__name__file__name__import traceback__import sys__import traceback__
+import sys.path__import sys.path__import traceback__
+import sys__main__import traceback__import traceback__main__import traceback__import sys.path__import traceback__import sys.path__main__import traceback__import sys.path__import traceback__import__import__import__main__import sys.path__import__import__import sys.path__import__import sys.path__import sys.path__import sys.path__main__name__import sys__import sys.path__import sys.path__import traceback__main__import__main__import sysimport sys.path__import sys.path__main__import sys.path__import sys.path__main__name__import sys__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import traceback__
+import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import__import __name__import sys.path__import sys.path__import traceback__import traceback__import__import traceback__import sys.path__import sys.path__import sys.path__import sys.stdin__import traceback__import sys.path__import sys.path__import __import sys.path__import sys.path__import traceback__import traceback__import sys.path__import sys.path__main__import sys.path__import sysimport traceback__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__name__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__name__import sys.path__import sys.path__main__import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__
+import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__name__import sys.path__import traceback__import sys.path__main__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import traceback__
+import sys.path__import os
+import sys.path__import sys.stdin__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import__name__init__import sys.path__main__name__main__import sys.path__import sys.path__import sys.path__import sys.path__main__main__import sys.path__import sys.path__import sys.stdin__import sys.path__import sys.path__main__name__import sys.path__import__name__main__import sys__import sys.path__import sys.path__main__import__import sys.path__import sys.path__import sys.path__import sys__
+import sys.path__import sys.path__main__import sys.path__import__main__import sys.stdin__main__import sys__import__main__name__import traceback__name__import sys.path__import sys.path__main__main__main__import sys.path__import__main__()
+_import sys.path__import__name__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import__main__import sys__import sys.path__import sys.path__import__import__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import__import traceback__import sys.path__
+import__name__import sys.path__import sys__import sys.path__import sys.path__import sys.path__import__main__import sys.path__import sys.path__import sys.path__import traceback__main__import sys.path__import sys.path__import traceback__import sys.path__main__import sys.path__import traceback__main__import traceback__main__import sys.path__main__import traceback__main__name__main__main__import traceback__import__main__import traceback
+__main__main__import sys.path__import sys.path__main__name__main__name__import traceback__import sys.path__import sys.path__import__name__import sys.path__import sys.path__import traceback__
+import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__main__import sys.path__import sys__import sys.path__import sys__import traceback__name__import sys.path__import sys.path__import traceback__import sys.path__import traceback__main__import sys.path__import__name__main__name__import sys.path__import sys.path__import traceback__main__name__import sys.path__import__main__import sys.path__main__name__main__name__import sys.path__import traceback__import sys.path__import__name__import sys.path__import__import sys.path__import__name__import sys.path__import sys.path__import__main__import sys.path__import traceback__import sys.path__name__main__name__import sys.path__main__import__import sys.path__import traceback__import sys.path__name__import traceback__import sys.path__import sys.path__init__name__main__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import os.system__import__import sys.path__import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__import os
+
+__import sys.path__import sys__main__import sys.path__init__import__import__main__import sys.path__import sys.stdin__import sys.path__import sys__import sys.path__import sys__import__name__import sys.path__import__name__main__import sys.path__import sys.path__import os
+__main__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import sys.path__
+import sys.stdin::main__import sys.path__main__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import traceback__main__import sys.path__import sys.path__import sys.path__main__import sys.path
+ sys.path__import os
+__main__import sys.path__main__import sys.path__main__name__import sys.path__main__main__main__import__name__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.stdin__import__import sys.path__import traceback__import sys.path__import os
+__main__import sys.path__import sys.path__import os
+__import traceback__import sys.stdin__import os.system__import sys.path__import traceback__main__import sys.path__import sys.path__import sysimport sys.path__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import traceback__import sys.path__import sys.path__name__import sys.path__import traceback__import sys.path__import sys.path__main__import traceback__import sys.path__name__import traceback__import__import traceback__import sys.path__
+import traceback__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__
+import sys.path__import sys.path__import traceback__import os
+__import sys.path__import sys.path__import sysimport sys.path__import sys.path__import sys.path__import traceback__
+import traceback__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import traceback__import traceback__import sys.path__import traceback__import sys.path__import traceback__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__
+import traceback__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import traceback__import sys.path__import sys.path__import traceback__import sys.path__main__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__import sys.path__import sys.path__main__import sys.path__import sys.path__import sys.path__import sys.path__import traceback__name__import sys.path__import sys.path__import traceback__main__import traceback__import sys.path__name__import traceback__import sys.path__import traceback__import sys.path__import traceback__name__import sys.path__import sys.path__import traceback__import sys.path__import os
+__import traceback__import sys.path__main__name__import traceback__import sys.path__main__import traceback__    __import__import sys.path__import sys.path__import sys.path__name__import traceback__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__name__import traceback__main__import traceback__import sys.path__import traceback__import sys.path__import sys.path__import traceback__main__import sys.path__name__import sys.path__import sys.path__import sys.path__import traceback__import__import traceback__import traceback__import__import traceback__import sys.path__import traceback__import sys.path__import os.system
+__import traceback__import sys.path__import sys.path__import traceback__import sys.path__import traceback__name__import os.system__import sys.path__import sys.path__import traceback__import traceback__main__import traceback__main__import sys.path__import sys.path__import traceback__import sys.path__import sys.stdin__main__import sys.path__import sys.path__import sys.path__import traceback__import sys.path__import sys.path__main__import traceback__import__import sys
