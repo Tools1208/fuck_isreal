@@ -1,96 +1,91 @@
+#!/usr/bin/env python3
 import os
 import sys
 import subprocess
+from pathlib import Path
 from time import sleep
-from tkinter import *
-from tkinter import ttk, messagebox
-import requests
-import threading
-from bs4 import BeautifulSoup
-import pyfiglet
 
-def display_banner():
-    os.system('clear')
-    # استخدام figlet من داخل البيئة الافتراضية
-    print(subprocess.getoutput(f'{sys.exec_prefix}/bin/figlet Fuck_Isreal | lolcat 2>/dev/null || {sys.exec_prefix}/bin/figlet Fuck_Isreal'))
-    print("\033[1;31mFuck Isreal By  : Anonymous Jordan Team\033[0m".center(60))
-    print("\033[1;32mLink  : https://t.me/AnonymousJordan\033[0m".center(60))
-    print("\n")
+# ---== تهيئة البيئة ==---
+ROOT_DIR = Path(__file__).resolve().parent
+VENV_DIR = ROOT_DIR / "venv"
+PYTHON = VENV_DIR / "bin" / "python"
+PIP = VENV_DIR / "bin" / "pip"
+REQUIREMENTS = ROOT_DIR / "requirements.txt"
 
-class AdminFinder:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("Admin Finder v4.0")
-        self.master.geometry("800x600")
-        
-        self.paths = ["/admin", "/login", "/wp-admin", "/dashboard", "/controlpanel"]
-        self.create_widgets()
+def install_system_deps():
+    """تثبيت الاعتمادات النظامية"""
+    deps = ["figlet", "lolcat", "python3-venv"]
+    missing = []
+    for dep in deps:
+        result = subprocess.run(
+            ["dpkg", "-s", dep],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        if result.returncode != 0:
+            missing.append(dep)
     
-    def create_widgets(self):
-        style = ttk.Style()
-        style.theme_use("clam")
-        
-        self.frame = ttk.Frame(self.master)
-        self.frame.pack(pady=20)
-        
-        ttk.Label(self.frame, text="Target URL:").grid(row=0, column=0)
-        self.url = ttk.Entry(self.frame, width=50)
-        self.url.grid(row=0, column=1)
-        self.url.insert(0, "http://")
-        
-        self.scan_btn = ttk.Button(self.frame, text="Start Scan", command=self.start_scan)
-        self.scan_btn.grid(row=0, column=2, padx=5)
-        
-        self.result = ttk.Treeview(self.master, columns=("Status", "Type"))
-        self.result.heading("#0", text="URL")
-        self.result.heading("Status", text="Status")
-        self.result.heading("Type", text="Type")
-        self.result.pack(fill=BOTH, expand=True)
-    
-    def start_scan(self):
-        target = self.url.get().strip()
-        if not target.startswith(("http://", "https://")):
-            messagebox.showerror("Error", "Invalid URL format")
-            return
-        
-        threading.Thread(target=self.scan, args=(target,)).start()
-    
-    def scan(self, target):
-        for path in self.paths:
-            url = target.rstrip("/") + path
-            try:
-                res = requests.get(url, timeout=10)
-                if res.status_code == 200:
-                    self.result.insert("", "end", text=url, values=(res.status_code, "Potential Admin"))
-                else:
-                    self.result.insert("", "end", text=url, values=(res.status_code, "Not Found"))
-            except Exception as e:
-                self.result.insert("", "end", text=url, values=("Error", str(e)))
+    if missing:
+        print(f"\033[1;33m[!] Installing system packages: {', '.join(missing)}\033[0m")
+        subprocess.run(
+            ["sudo", "apt", "update"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        subprocess.run(
+            ["sudo", "apt", "install", "-y"] + missing,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
 
-def main_menu():
-    display_banner()
-    print("\033[1;33m[01]\033[0m Admin Finder")
-    print("\033[1;31m[99]\033[0m Exit\n")
-    
-    choice = input("\033[1;35mChoose an option: \033[0m")
-    
-    if choice == "01":
-        os.system('clear')
-        root = Tk()
-        app = AdminFinder(root)
-        root.mainloop()
-        main_menu()  # العودة للقائمة بعد الإغلاق
-    elif choice == "99":
-        print("\033[1;31mExiting...\033[0m")
-        sys.exit()
+def create_virtualenv():
+    """إنشاء البيئة الافتراضية"""
+    if not VENV_DIR.exists():
+        print("\033[1;33m[!] Creating virtual environment...\033[0m")
+        subprocess.run(
+            [sys.executable, "-m", "venv", VENV_DIR],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+def install_python_deps():
+    """تثبيت الاعتمادات البرمجية"""
+    if REQUIREMENTS.exists():
+        print("\033[1;33m[!] Installing Python dependencies...\033[0m")
+        subprocess.run(
+            [PIP, "install", "--no-warn-script-location", "-r", REQUIREMENTS],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
     else:
-        print("\033[1;31mInvalid choice!\033[0m")
-        sleep(1)
-        main_menu()
+        print(f"\033[1;31m[!] Requirements file {REQUIREMENTS} not found!\033[0m")
+        sys.exit(1)
 
-def main():
+def check_environment():
+    """التحقق من إعداد البيئة"""
     try:
-        main_menu()
-    except KeyboardInterrupt:
-        print("\n\033[1;31m[!] Program interrupted by user\033[0m")
-        sys.exit()
+        install_system_deps()
+        create_virtualenv()
+        install_python_deps()
+    except subprocess.CalledProcessError as e:
+        print(f"\033[1;31m[!] Setup failed: {e}\033[0m")
+        sys.exit(1)
+
+def run_in_virtualenv():
+    """إعادة التشغيل داخل البيئة الافتراضية"""
+    args = [PYTHON, __file__] + sys.argv[1:]
+    os.execv(PYTHON, args)
+
+if __name__ == "__main__":
+    # تحقق من البيئة عند التشغيل الأول
+    if not os.getenv("VIRTUAL_ENV"):
+        check_environment()
+        run_in_virtualenv()
+    else:
+        # تشغيل التطبيق الرئيسي
+        from app import main
+        main()
