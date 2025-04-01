@@ -2,7 +2,8 @@
 import os
 import sys
 from time import sleep
-from tools.open_files import run as open_files_tool  # Import your tool
+from tools.open_files import run as open_files  # Open Files tool
+from tools.admin_finder import run as admin_finder  # Admin Finder tool
 
 # === Setup interface ===
 def display_header():
@@ -19,7 +20,13 @@ def main_menu():
     # Print options in rows of 5
     for i in range(1, 51):
         num = f"{i:02d}"
-        label = "Open Files Tool" if i == 1 else "Soon"
+        if i == 1:
+            label = "Open Files"
+        elif i == 2:
+            label = "Admin Finder"
+        else:
+            label = "Soon"
+            
         print(f"\033[1;33m[{num}]\033[0m {label}", end="\t")
         
         # New line after every 5 items
@@ -42,16 +49,26 @@ def main():
         elif choice == '01':
             os.system('clear')
             try:
-                open_files_tool()  # Run the password cracker tool
+                open_files()  # Run open files tool
+            except Exception as e:
+                print(f"\033[1;31mError: {str(e)}\033[0m")
+                sleep(3)
+            finally:
+                os.system('clear')
+                
+        elif choice == '02':
+            os.system('clear')
+            try:
+                admin_finder()  # Run admin finder tool
             except Exception as e:
                 print(f"\033[1;31mError: {str(e)}\033[0m")
                 sleep(3)
             finally:
                 os.system('clear')
         
-        elif choice.isdigit() and 2 <= int(choice) <= 50:
+        elif choice.isdigit() and 3 <= int(choice) <= 50:
             print(f"\033[1;33m\nSelected tool {choice:0>2}\033[0m")
-            print("\033[1;34mThis tool will be available soon!\033[0m")
+            print("\033[1;34mThis feature will be available soon!\033[0m")
             sleep(2)
             os.system('clear')
             
