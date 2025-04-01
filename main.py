@@ -2,13 +2,22 @@
 import os
 import sys
 import subprocess
+from pathlib import Path
 from time import sleep
 
+# ───═ تكوين البيئة ═──
+ROOT_DIR = Path(__file__).parent.absolute()
+VENV_DIR = ROOT_DIR / "venv"
+PYTHON = VENV_DIR / "bin" / "python"
+PIP = VENV_DIR / "bin" / "pip"
+
 def install_system_deps():
-    deps = ["figlet", "lolcat"]
+    # تثبيت اعتماديات النظام
+    deps = ["figlet", "lolcat", "python3-venv"]
     missing = []
+    
     for dep in deps:
-        if subprocess.run(["which", dep], stdout=subprocess.PIPE).returncode != 0:
+        if subprocess.run(["dpkg", "-s", dep], stdout=subprocess.PIPE).returncode != 0:
             missing.append(dep)
     
     if missing:
@@ -16,32 +25,38 @@ def install_system_deps():
         subprocess.run(["sudo", "apt", "update"], stdout=subprocess.PIPE)
         subprocess.run(["sudo", "apt", "install", "-y"] + missing, stdout=subprocess.PIPE)
 
-def install_python_deps():
-    required = ["requests", "beautifulsoup4", "pyfiglet", "tqdm", "colorama"]
-    missing = []
-    
-    for pkg in required:
-        try:
-            __import__(pkg)
-        except ImportError:
-            missing.append(pkg)
-    
-    if missing:
-        print(f"\033[1;33m[!] Installing Python packages: {', '.join(missing)}\033[0m")
-        subprocess.run([sys.executable, "-m", "pip", "install", "--user"] + missing)
-        print("\033[1;32m[+] Restarting script...\033[0m")
+def create_virtualenv():
+    # إنشاء بيئة افتراضية
+    if not VENV_DIR.exists():
+        print("\033[1;33m[!] Creating virtual environment...\033[0m")
+        subprocess.run([sys.executable, "-m", "venv", VENV_DIR])
         sleep(2)
-        # Fix the infinite loop by using exec instead of os.execv
-        os.execv(sys.executable, ['python3'] + sys.argv)
 
-def check_dependencies():
-    install_system_deps()
-    install_python_deps()
+def install_python_deps():
+    # تثبيت الاعتمادات داخل البيئة الافتراضية
+    required = ["requests", "beautifulsoup4", "pyfiglet", "tqdm", "colorama"]
+    subprocess.run([PIP, "install", "--no-warn-script-location"] + required)
 
-# Check dependencies only once at startup
+def check_environment():
+    # التحقق من الإعدادات
+    if not PYTHON.exists() or not PIP.exists():
+        create_virtualenv()
+        install_python_deps()
+
+def run_in_venv():
+    # تشغيل البرنامج داخل البيئة الافتراضية
+    os.execv(PYTHON, [PYTHON] + sys.argv)
+
 if __name__ == "__main__":
-    check_dependencies()
+    # إعداد البيئة عند التشغيل الأول
+    install_system_deps()
+    check_environment()
+    
+    # التأكد من أننا نعمل داخل البيئة الافتراضية
+    if "VIRTUAL_ENV" not in os.environ:
+        run_in_venv()
 
+# ───═ الكود الرئيسي ═──
 import os
 import sys
 import subprocess
@@ -55,7 +70,7 @@ import pyfiglet
 
 def display_banner():
     os.system('clear')
-    print(subprocess.getoutput('figlet Fuck_Isreal | lolcat 2>/dev/null || figlet Fuck_Isreal'))
+    print(subprocess.getoutput(f'{VENV_DIR}/bin/figlet Fuck_Isreal | lolcat 2>/dev/null || {VENV_DIR}/bin/figlet Fuck_Isreal'))
     print("\033[1;31mFuck Isreal By  : Anonymous Jordan Team\033[0m".center(60))
     print("\033[1;32mLink  : https://t.me/AnonymousJordan\033[0m".center(60))
     print("\n")
@@ -63,7 +78,7 @@ def display_banner():
 class AdminFinder:
     def __init__(self, master):
         self.master = master
-        self.master.title("Admin Finder v2.0")
+        self.master.title("Admin Finder v3.0")
         self.master.geometry("800x600")
         
         self.paths = ["/admin", "/login", "/wp-admin", "/dashboard", "/controlpanel"]
