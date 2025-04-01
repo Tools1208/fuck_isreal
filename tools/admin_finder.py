@@ -8,6 +8,7 @@ import os
 import re
 import tempfile
 import webbrowser
+import time
 import pyfiglet
 
 # ───═ ʙᴀɴɴᴇʀ ═──
