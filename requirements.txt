@@ -4,4 +4,3 @@ cryptography
 tqdm
 pyfiglet
 colorama
-socket
