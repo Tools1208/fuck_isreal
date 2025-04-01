@@ -1,7 +1,5 @@
-lolcat
-requests
-cryptography
-tqdm
-pyfiglet
-colorama
-beautifulsoup4
+requests==2.32.3
+beautifulsoup4==4.13.3
+pyfiglet==1.0.2
+tqdm==4.67.1
+colorama==0.4.6
