@@ -16,7 +16,7 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 # Constants
-VERSION = "6.3 Advanced"
+VERSION = "6.4 Advanced"
 DEFAULT_WORDLIST = "admin_paths.txt"
 DEFAULT_PATHS = [
     "admin", "administrator", "login", "wp-admin", "admin.php",
@@ -73,18 +73,20 @@ def is_domain_resolvable(domain):
         return False
 
 def generate_global_variants(base_url):
-    """Generate global domain and subdomain variants"""
+    """Generate global domain and subdomain variants with scheme preservation"""
     parsed = urllib.parse.urlparse(base_url)
     base_domain = parsed.netloc.split(':', 1)[0].replace('www.', '')
+    original_scheme = parsed.scheme
     
     variants = []
     for tld in GLOBAL_TLDS:
         for sub in COMMON_SUBDOMAINS:
             domain = f"{sub + '.' if sub else ''}{base_domain}{tld}"
             if is_domain_resolvable(domain):
-                for scheme in ["http", "https"]:
-                    variants.append(f"{scheme}://{domain}/")
-                    
+                # Preserve original scheme and add HTTPS variant
+                variants.append(f"{original_scheme}://{domain}/")
+                variants.append(f"https://{domain}/")  # Force HTTPS check
+                
     return list(set(variants))
 
 def validate_url(url):
@@ -165,7 +167,7 @@ def scan_worker(url, proxy, delay, paths, results, progress, all_urls):
         thread.join()
 
 def run():
-    """Main function to run the scanner"""
+    """Main function to run the scanner (returns to main menu)"""
     display_banner()
     
     # Get user input
@@ -177,13 +179,13 @@ def run():
     target_url = validate_url(target_url)
     if not target_url:
         print(f"{Colors.ERROR}[!] Invalid URL format")
-        sys.exit(1)
+        return  # Return to main menu
         
     # Load wordlist
     wordlist = load_wordlist(wordlist_path)
     if not wordlist:
         print(f"{Colors.ERROR}[!] Failed to load wordlist")
-        sys.exit(1)
+        return  # Return to main menu
         
     # Proxy configuration
     proxies = None
@@ -229,9 +231,9 @@ def run():
     else:
         print(f"\n{Colors.WARNING}[!] No admin pages found")
         
-    # Wait for user input before exiting
-    input(f"\n{Colors.INFO}[!] Press Enter to exit...")
-    sys.exit()
+    # Wait for user input before returning to main menu
+    input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
+    return  # Return control to main.py menu
 
 if __name__ == "__main__":
     run()
