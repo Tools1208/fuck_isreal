@@ -2,3 +2,4 @@ lolcat
 requests
 cryptography
 tqdm
+pyfiglet
