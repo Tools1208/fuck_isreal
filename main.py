@@ -1,1 +1,103 @@
+#!/usr/bin/env python3
+import os
+import sys
+from time import sleep
 
+def check_system_dependencies():
+    # Check figlet installation
+    if os.system("which figlet > /dev/null") != 0:
+        print("\033[1;31mError: figlet is not installed!\033[0m")
+        print("Install using: sudo apt install figlet")
+        sys.exit(1)
+    
+    # Check lolcat installation
+    if os.system("which lolcat > /dev/null") != 0:
+        print("\033[1;31mError: lolcat is not installed!\033[0m")
+        print("Install using: sudo apt install lolcat")
+        sys.exit(1)
+
+def check_python_dependencies():
+    required = ['requests', 'cryptography', 'tqdm', 'pyfiglet', 'colorama']
+    missing = []
+    
+    for package in required:
+        try:
+            __import__(package)
+        except ImportError:
+            missing.append(package)
+    
+    if missing:
+        print("\033[1;33m[!] Installing missing Python dependencies...\033[0m")
+        os.system(f"pip3 install {' '.join(missing)} --break-system-packages")
+        print("\033[1;32m[+] Dependencies installed successfully!\033[0m")
+        sleep(2)
+        os.execv(sys.executable, ['python3'] + sys.argv)
+
+# Run system checks first
+check_system_dependencies()
+check_python_dependencies()
+
+# Import tools after dependency checks
+from tools.open_files import run as open_files
+from tools.admin_finder import run as admin_finder
+
+def display_header():
+    os.system('clear && figlet Fuck_Isreal | lolcat 2>/dev/null || figlet Fuck_Isreal')
+    print("\033[1;31mFuck Isreal By  : Anonymous Jordan Team\033[0m".center(60))
+    print("\033[1;32mLink  : https://t.me/AnonymousJordan\033[0m".center(60))
+    print("\n")
+
+def main_menu():
+    display_header()
+    
+    tools = {
+        '01': ("Open Files", open_files),
+        '02': ("Admin Finder", admin_finder),
+        # Add new tools here with '03': ("Tool Name", tool_function)
+    }
+    
+    # Print available tools
+    for num in range(1, 51):
+        key = f"{num:02d}"
+        if key in tools:
+            print(f"\033[1;33m[{key}]\033[0m {tools[key][0]}", end="\t")
+        else:
+            print(f"\033[1;37m[{key}]\033[0m Soon", end="\t")
+        if num % 5 == 0:
+            print()
+    
+    print(f"\n\033[1;31m[99]\033[0m Exit\n")
+
+def main():
+    while True:
+        main_menu()
+        choice = input("\033[1;35mChoose an option: \033[0m").strip()
+        
+        if choice == '99':
+            print("\033[1;31mExiting...\033[0m")
+            sleep(1)
+            sys.exit()
+            
+        elif choice in tools:
+            os.system('clear')
+            try:
+                tools[choice][1]()
+            except Exception as e:
+                print(f"\033[1;31mError: {str(e)}\033[0m")
+                sleep(3)
+            finally:
+                os.system('clear')
+                
+        elif choice.isdigit() and 3 <= int(choice) <= 50:
+            print(f"\033[1;33m\nSelected tool {choice:0>2}\033[0m")
+            print("\033[1;34mThis feature will be available soon!\033[0m")
+            sleep(2)
+            os.system('clear')
+            
+        else:
+            print("\033[1;31mInvalid choice! Please try again.\033[0m")
+            sleep(1)
+            os.system('clear')
+
+if __name__ == "__main__":
+    main()
