@@ -16,19 +16,12 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 # Constants
-VERSION = "6.4 Advanced"
+VERSION = "6.4 Focused"
 DEFAULT_WORDLIST = "admin_paths.txt"
 DEFAULT_PATHS = [
     "admin", "administrator", "login", "wp-admin", "admin.php",
     "dashboard", "controlpanel", "cp", "manager", "phpmyadmin",
     "admin_area", "admin-console", "admin_login", "admin_panel"
-]
-
-# Extended lists for global scanning
-COMMON_SUBDOMAINS = ["", "www", "admin", "test", "dev", "app", "web", "portal"]
-GLOBAL_TLDS = [
-    ".com", ".net", ".org", ".info", ".biz", ".co", ".io",
-    ".xyz", ".online", ".site", ".tech", ".shop", ".cloud"
 ]
 
 class Colors:
@@ -64,31 +57,6 @@ def display_banner():
     print(f"{Colors.HEADER}Version: {VERSION}".center(60))
     print(f"{Colors.WARNING}{'='*60}")
 
-def is_domain_resolvable(domain):
-    """Check domain resolvability using socket"""
-    try:
-        socket.gethostbyname(domain)
-        return True
-    except socket.error:
-        return False
-
-def generate_global_variants(base_url):
-    """Generate global domain and subdomain variants with scheme preservation"""
-    parsed = urllib.parse.urlparse(base_url)
-    base_domain = parsed.netloc.split(':', 1)[0].replace('www.', '')
-    original_scheme = parsed.scheme
-    
-    variants = []
-    for tld in GLOBAL_TLDS:
-        for sub in COMMON_SUBDOMAINS:
-            domain = f"{sub + '.' if sub else ''}{base_domain}{tld}"
-            if is_domain_resolvable(domain):
-                # Preserve original scheme and add HTTPS variant
-                variants.append(f"{original_scheme}://{domain}/")
-                variants.append(f"https://{domain}/")  # Force HTTPS check
-                
-    return list(set(variants))
-
 def validate_url(url):
     """Validate and normalize URL format"""
     if not url:
@@ -110,8 +78,8 @@ def load_wordlist(wordlist_path):
     with open(wordlist_path, 'r') as f:
         return [line.strip() for line in f if line.strip()]
 
-def scan_worker(url, proxy, delay, paths, results, progress, all_urls):
-    """Advanced multithreaded scanning worker"""
+def scan_worker(url, proxy, delay, paths, results, progress):
+    """Focused multithreaded scanning worker"""
     lock = Lock()
     queue = Queue()
     
@@ -123,9 +91,6 @@ def scan_worker(url, proxy, delay, paths, results, progress, all_urls):
                 
             try:
                 full_url = f"{url}{path}"
-                with lock:
-                    all_urls.append(full_url)
-                    
                 response = requests.get(
                     full_url,
                     proxies=proxy,
@@ -167,7 +132,7 @@ def scan_worker(url, proxy, delay, paths, results, progress, all_urls):
         thread.join()
 
 def run():
-    """Main function to run the scanner (returns to main menu)"""
+    """Main function to run the scanner (focused mode)"""
     display_banner()
     
     # Get user input
@@ -179,13 +144,15 @@ def run():
     target_url = validate_url(target_url)
     if not target_url:
         print(f"{Colors.ERROR}[!] Invalid URL format")
-        return  # Return to main menu
+        input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
+        return
         
     # Load wordlist
     wordlist = load_wordlist(wordlist_path)
     if not wordlist:
         print(f"{Colors.ERROR}[!] Failed to load wordlist")
-        return  # Return to main menu
+        input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
+        return
         
     # Proxy configuration
     proxies = None
@@ -193,35 +160,26 @@ def run():
         proxy_url = input(f"{Colors.INFO}[?] Enter proxy URL (e.g., http://127.0.0.1:8080): ").strip()
         proxies = {"http": proxy_url, "https": proxy_url}
         
-    # Generate URL variants
-    print(f"{Colors.INFO}[+] Generating global domain variants...")
-    urls_to_scan = generate_global_variants(target_url)
-    
-    # Show generated base URLs
-    print(f"{Colors.INFO}[+] Generated {len(urls_to_scan)} base URLs:")
-    for url in urls_to_scan:
-        print(f"    {Colors.INFO}{url}")
-        
     # Prepare scanning
     results = []
-    all_urls = []
-    total_requests = len(wordlist) * len(urls_to_scan)
+    total_requests = len(wordlist) * 2  # HTTP + HTTPS checks
     progress = tqdm(total=total_requests, unit="req", dynamic_ncols=True)
     
     try:
-        for url in urls_to_scan:
-            scan_worker(url, proxies, 0.1, wordlist, results, progress, all_urls)
+        # Scan both HTTP and HTTPS versions
+        for scheme in ["http", "https"]:
+            parsed = urllib.parse.urlparse(target_url)
+            base_url = f"{scheme}://{parsed.netloc}/"
+            
+            # Show base URL being scanned
+            print(f"\n{Colors.INFO}[+] Scanning: {base_url}")
+            
+            scan_worker(base_url, proxies, 0.1, wordlist, results, progress)
             
     except KeyboardInterrupt:
         print(f"\n{Colors.WARNING}[!] Scan interrupted by user")
     finally:
         progress.close()
-        
-    # Show all scanned URLs
-    print(f"\n{Colors.INFO}[+] Total URLs scanned: {len(all_urls)}")
-    print(f"{Colors.INFO}[+] Full URL list:")
-    for scanned_url in all_urls:
-        print(f"    {scanned_url}")
         
     # Show results
     if results:
@@ -233,7 +191,7 @@ def run():
         
     # Wait for user input before returning to main menu
     input(f"\n{Colors.INFO}[!] Press Enter to return to main menu...")
-    return  # Return control to main.py menu
+    return
 
 if __name__ == "__main__":
     run()
