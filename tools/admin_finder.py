@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import os
 import sys
-import time
 import socket
 import urllib.parse
 from threading import Lock, Thread
+import requests
+from requests.exceptions import RequestException
 from queue import Queue
 from tqdm import tqdm
 import pyfiglet
@@ -109,10 +110,11 @@ def load_wordlist(wordlist_path):
 def scan_worker(url, proxy, delay, paths, results, progress):
     """Advanced multithreaded scanning worker"""
     lock = Lock()
+    queue = Queue()
     
     def worker():
         while True:
-            path = paths.get()
+            path = queue.get()
             if path is None:
                 break
                 
@@ -123,7 +125,7 @@ def scan_worker(url, proxy, delay, paths, results, progress):
                     proxies=proxy,
                     timeout=10,
                     allow_redirects=True,
-                    verify=False  # Disable SSL verification
+                    verify=False
                 )
                 
                 if 200 <= response.status_code < 300:
@@ -131,32 +133,35 @@ def scan_worker(url, proxy, delay, paths, results, progress):
                         results.append((full_url, response.status_code))
                         tqdm.write(f"{Colors.SUCCESS}[+] Found: {full_url} (Status: {response.status_code})")
                         
+                progress.update(1)
                 time.sleep(delay)
                 
-            except requests.exceptions.RequestException:
-                pass
-            finally:
+            except RequestException:
                 progress.update(1)
-                paths.task_done()
+                continue
+            finally:
+                queue.task_done()
 
     # Start worker threads
-    threads = []
-    for _ in range(25):
-        t = Thread(target=worker)
-        t.daemon = True
-        t.start()
-        threads.append(t)
-
+    threads = [Thread(target=worker, daemon=True) for _ in range(25)]
+    for thread in threads:
+        thread.start()
+        
+    # Add paths to queue
+    for path in paths:
+        queue.put(path)
+        
     # Wait for all tasks to complete
-    paths.join()
-
+    queue.join()
+    
     # Stop workers
     for _ in range(25):
-        paths.put(None)
-    for t in threads:
-        t.join()
+        queue.put(None)
+    for thread in threads:
+        thread.join()
 
-def main():
+def run():
+    """Main function to run the scanner"""
     display_banner()
     
     # Get user input
@@ -188,15 +193,12 @@ def main():
     
     # Prepare scanning
     results = []
-    progress = tqdm(total=len(wordlist)*len(urls_to_scan), unit="req", dynamic_ncols=True)
+    total_requests = len(wordlist) * len(urls_to_scan)
+    progress = tqdm(total=total_requests, unit="req", dynamic_ncols=True)
     
     try:
         for url in urls_to_scan:
-            paths_queue = Queue()
-            for path in wordlist:
-                paths_queue.put(path)
-                
-            scan_worker(url, proxies, 0.1, paths_queue, results, progress)
+            scan_worker(url, proxies, 0.1, wordlist, results, progress)
             
     except KeyboardInterrupt:
         print(f"\n{Colors.WARNING}[!] Scan interrupted by user")
@@ -211,4 +213,4 @@ def main():
         print(f"\n{Colors.WARNING}[!] No admin pages found")
 
 if __name__ == "__main__":
-    main()
+    run()
