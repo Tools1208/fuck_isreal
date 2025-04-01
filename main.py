@@ -28,15 +28,17 @@ def install_python_deps():
     
     if missing:
         print(f"\033[1;33m[!] Installing Python packages: {', '.join(missing)}\033[0m")
-        subprocess.run([sys.executable, "-m", "pip", "install", "--break-system-packages"] + missing)
+        subprocess.run([sys.executable, "-m", "pip", "install", "--user"] + missing)
         print("\033[1;32m[+] Restarting script...\033[0m")
         sleep(2)
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+        # Fix the infinite loop by using exec instead of os.execv
+        os.execv(sys.executable, ['python3'] + sys.argv)
 
 def check_dependencies():
     install_system_deps()
     install_python_deps()
 
+# Check dependencies only once at startup
 if __name__ == "__main__":
     check_dependencies()
 
