@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 import os
 import sys
+import subprocess
 from time import sleep
 
 def check_system_dependencies():
-    # Check figlet installation
-    if os.system("which figlet > /dev/null") != 0:
-        print("\033[1;31mError: figlet is not installed!\033[0m")
-        print("Install using: sudo apt install figlet")
-        sys.exit(1)
+    packages = []
+    if subprocess.run(['which', 'figlet'], stdout=subprocess.PIPE).returncode != 0:
+        packages.append("figlet")
+    if subprocess.run(['which', 'lolcat'], stdout=subprocess.PIPE).returncode != 0:
+        packages.append("lolcat")
     
-    # Check lolcat installation
-    if os.system("which lolcat > /dev/null") != 0:
-        print("\033[1;31mError: lolcat is not installed!\033[0m")
-        print("Install using: sudo apt install lolcat")
-        sys.exit(1)
+    if packages:
+        print(f"\033[1;33m[!] Installing system dependencies: {' '.join(packages)}\033[0m")
+        subprocess.run(['sudo', 'apt', 'update'], stdout=subprocess.PIPE)
+        subprocess.run(['sudo', 'apt', 'install', '-y'] + packages, stdout=subprocess.PIPE)
+        print("\033[1;32m[+] System dependencies installed successfully!\033[0m")
+        sleep(2)
 
 def check_python_dependencies():
-    required = ['requests', 'cryptography', 'tqdm', 'pyfiglet', 'colorama']
+    required = ['requests', 'cryptography', 'tqdm', 'pyfiglet', 'colorama', 'beautifulsoup4']
     missing = []
     
     for package in required:
@@ -27,17 +29,22 @@ def check_python_dependencies():
             missing.append(package)
     
     if missing:
-        print("\033[1;33m[!] Installing missing Python dependencies...\033[0m")
-        os.system(f"pip3 install {' '.join(missing)} --break-system-packages")
-        print("\033[1;32m[+] Dependencies installed successfully!\033[0m")
+        print(f"\033[1;33m[!] Installing Python dependencies: {', '.join(missing)}\033[0m")
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--break-system-packages'] + missing)
+        print("\033[1;32m[+] Python dependencies installed successfully!\033[0m")
         sleep(2)
-        os.execv(sys.executable, ['python3'] + sys.argv)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
-# Run system checks first
-check_system_dependencies()
-check_python_dependencies()
+def run_checks():
+    check_system_dependencies()
+    check_python_dependencies()
 
-# Import tools after dependency checks
+if __name__ == "__main__":
+    run_checks()
+
+import os
+import sys
+from time import sleep
 from tools.open_files import run as open_files
 from tools.admin_finder import run as admin_finder
 
@@ -54,10 +61,8 @@ def main_menu():
         '02': ("Admin Finder", admin_finder),
     }
     
-    # Print available tools
     print(f"\033[1;33m[01]\033[0m Open Files\t\t\033[1;33m[02]\033[0m Admin Finder")
     print(f"\033[1;31m[99]\033[0m Exit\n")
-    
     return tools
 
 def main():
@@ -79,7 +84,6 @@ def main():
                 sleep(3)
             finally:
                 os.system('clear')
-                
         else:
             print("\033[1;31mInvalid choice! Please try again.\033[0m")
             sleep(1)
