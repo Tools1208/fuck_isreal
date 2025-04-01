@@ -49,28 +49,20 @@ def display_header():
 
 def main_menu():
     display_header()
-    
     tools = {
         '01': ("Open Files", open_files),
         '02': ("Admin Finder", admin_finder),
-        # Add new tools here with '03': ("Tool Name", tool_function)
     }
     
     # Print available tools
-    for num in range(1, 51):
-        key = f"{num:02d}"
-        if key in tools:
-            print(f"\033[1;33m[{key}]\033[0m {tools[key][0]}", end="\t")
-        else:
-            print(f"\033[1;37m[{key}]\033[0m Soon", end="\t")
-        if num % 5 == 0:
-            print()
+    print(f"\033[1;33m[01]\033[0m Open Files\t\t\033[1;33m[02]\033[0m Admin Finder")
+    print(f"\033[1;31m[99]\033[0m Exit\n")
     
-    print(f"\n\033[1;31m[99]\033[0m Exit\n")
+    return tools
 
 def main():
     while True:
-        main_menu()
+        tools = main_menu()
         choice = input("\033[1;35mChoose an option: \033[0m").strip()
         
         if choice == '99':
@@ -88,12 +80,6 @@ def main():
             finally:
                 os.system('clear')
                 
-        elif choice.isdigit() and 3 <= int(choice) <= 50:
-            print(f"\033[1;33m\nSelected tool {choice:0>2}\033[0m")
-            print("\033[1;34mThis feature will be available soon!\033[0m")
-            sleep(2)
-            os.system('clear')
-            
         else:
             print("\033[1;31mInvalid choice! Please try again.\033[0m")
             sleep(1)
