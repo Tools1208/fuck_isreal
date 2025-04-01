@@ -106,7 +106,8 @@ def scan_websites(websites, proxy_enable, proxyprotocol=None, proxyserver=None, 
         q.join()
         print('\n')
 
-def main():
+def run():
+    """واجهة التشغيل الرئيسية للأداة"""
     display_banner()
     if len(sys.argv) == 1:
         display_menu()
@@ -172,4 +173,4 @@ def main():
         scan_websites(websites_to_scan, proxy_enable, proxyprotocol, proxyserver, delay, wordlist)
 
 if __name__ == "__main__":
-    main()
+    run()
