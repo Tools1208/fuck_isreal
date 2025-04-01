@@ -11,19 +11,24 @@ from tqdm import tqdm
 import pyfiglet
 from colorama import Fore, Style, init
 
-# تهيئة الألوان
+# Initialize colorama
 init(autoreset=True)
 
-# الثوابت
-VERSION = "5.0 Global"
+# Constants
+VERSION = "6.2 Advanced"
 DEFAULT_WORDLIST = "admin_paths.txt"
 DEFAULT_PATHS = [
     "admin", "administrator", "login", "wp-admin", "admin.php",
     "dashboard", "controlpanel", "cp", "manager", "phpmyadmin",
     "admin_area", "admin-console", "admin_login", "admin_panel"
 ]
-GLOBAL_TLDS = [".com", ".net", ".org", ".info", ".biz", ".co", ".io"]
-COMMON_SUBDOMAINS = ["", "www", "admin", "test", "dev", "app"]
+
+# Extended lists for global scanning
+COMMON_SUBDOMAINS = ["", "www", "admin", "test", "dev", "app", "web", "portal"]
+GLOBAL_TLDS = [
+    ".com", ".net", ".org", ".info", ".biz", ".co", ".io",
+    ".xyz", ".online", ".site", ".tech", ".shop", ".cloud"
+]
 
 class Colors:
     HEADER = Fore.MAGENTA
@@ -35,7 +40,7 @@ class Colors:
     RESET = Style.RESET_ALL
 
 def create_default_wordlist():
-    """إنشاء قائمة مسارات افتراضية"""
+    """Create default wordlist if not exists"""
     if not os.path.exists(DEFAULT_WORDLIST):
         with open(DEFAULT_WORDLIST, 'w') as f:
             for path in DEFAULT_PATHS:
@@ -43,9 +48,9 @@ def create_default_wordlist():
         print(f"{Colors.SUCCESS}[+] Created default wordlist: {DEFAULT_WORDLIST}")
 
 def display_banner():
-    """عرض الواجهة الرئيسية المطورة"""
+    """Display professional colorized banner"""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(Colors.HEADER + pyfiglet.figlet_format("GlobalFinder", font="slant"))
+    print(Colors.HEADER + pyfiglet.figlet_format("AdminFinder", font="slant"))
     print(fr"""
 {Colors.INFO}  _____           _       _    _____ _           _         
  |  ___|_ _  ___| |_ ___| |  |  ___(_)_ __   __| | ___ _ __ 
@@ -59,7 +64,7 @@ def display_banner():
     print(f"{Colors.WARNING}{'='*60}")
 
 def is_domain_resolvable(domain):
-    """التحقق من إمكانية حل النطاق باستخدام socket"""
+    """Check domain resolvability using socket"""
     try:
         socket.gethostbyname(domain)
         return True
@@ -67,17 +72,15 @@ def is_domain_resolvable(domain):
         return False
 
 def generate_global_variants(base_url):
-    """إنشاء متغيرات عالمية للنطاقات الفرعية والنطاقات العليا"""
+    """Generate global domain and subdomain variants"""
     parsed = urllib.parse.urlparse(base_url)
     base_domain = parsed.netloc.split(':', 1)[0].replace('www.', '')
     
     variants = []
     for tld in GLOBAL_TLDS:
         for sub in COMMON_SUBDOMAINS:
-            # تكوين النطاق مع الـ TLD والنطاق الفرعي
-            domain = f"{sub}{'.' if sub else ''}{base_domain}{tld}"
+            domain = f"{sub + '.' if sub else ''}{base_domain}{tld}"
             if is_domain_resolvable(domain):
-                # إنشاء الروابط مع الـ TLD المختلف
                 for scheme in ["http", "https"]:
                     url = f"{scheme}://{domain}/"
                     variants.append(url)
@@ -85,7 +88,7 @@ def generate_global_variants(base_url):
     return list(set(variants))
 
 def validate_url(url):
-    """التحقق من صحة الرابط وتنسيقه"""
+    """Validate and normalize URL format"""
     if not url:
         return None
     parsed = urllib.parse.urlparse(url)
@@ -94,7 +97,7 @@ def validate_url(url):
     return f"{url.rstrip('/')}/"
 
 def load_wordlist(wordlist_path):
-    """تحميل قائمة المسارات مع إنشاء افتراضي"""
+    """Smart wordlist loading with automatic creation"""
     if not os.path.exists(DEFAULT_WORDLIST):
         create_default_wordlist()
     
@@ -107,7 +110,7 @@ def load_wordlist(wordlist_path):
         return [line.strip() for line in f if line.strip()]
 
 def scan_worker(url, proxy, delay, paths, results, progress):
-    """وظيفة المسح المتقدمة"""
+    """Advanced multithreaded scanning worker"""
     lock = Lock()
     queue = Queue()
     
@@ -137,7 +140,7 @@ def scan_worker(url, proxy, delay, paths, results, progress):
             finally:
                 queue.task_done()
     
-    threads = [Thread(target=worker, daemon=True) for _ in range(15)]
+    threads = [Thread(target=worker, daemon=True) for _ in range(25)]
     for thread in threads:
         thread.start()
     
@@ -146,89 +149,93 @@ def scan_worker(url, proxy, delay, paths, results, progress):
     
     queue.join()
     
-    for _ in range(15):
+    for _ in range(25):
         queue.put(None)
     for thread in threads:
         thread.join()
 
 def run():
-    """الدالة الرئيسية المطورة"""
+    """Main execution function with menu integration"""
     create_default_wordlist()
     
-    while True:
-        display_banner()
-        print(f"""
-{Colors.INFO}[1]{Colors.RESET} Start Global Scan
-{Colors.WARNING}[99]{Colors.RESET} Exit Tool
-        """.strip())
-        
-        choice = input(f"\n{Colors.BOLD}Select option: {Colors.RESET}").strip()
-        if choice == '99':
-            sys.exit(0)
-        if choice != '1':
-            continue
-        
-        target = input(f"\n{Colors.INFO}[+] Target (e.g., example.com): {Colors.RESET}").strip()
-        proxy = input(f"{Colors.INFO}[+] Proxy (http-1.2.3.4:8080): {Colors.RESET}").strip()
-        delay = input(f"{Colors.INFO}[+] Request delay (seconds) [0]: {Colors.RESET}").strip() or '0'
-        wordlist = input(f"{Colors.INFO}[+] Wordlist [Press Enter for default]: {Colors.RESET}").strip()
-        
+    display_banner()
+    print(f"""
+{Colors.INFO}[1]{Colors.RESET} Start Global Admin Scan
+{Colors.WARNING}[99]{Colors.RESET} Return to Main Menu
+    """.strip())
+    
+    choice = input(f"\n{Colors.BOLD}Select option: {Colors.RESET}").strip()
+    if choice == '99':
+        print(f"{Colors.INFO}[i] Returning to main menu...")
+        return
+    
+    if choice != '1':
+        print(f"{Colors.ERROR}[!] Invalid option selected")
+        sleep(2)
+        return run()
+
+    target = input(f"\n{Colors.INFO}[+] Target (e.g., example.com): {Colors.RESET}").strip()
+    proxy = input(f"{Colors.INFO}[+] Proxy (http-1.2.3.4:8080): {Colors.RESET}").strip()
+    delay = input(f"{Colors.INFO}[+] Request delay (seconds) [0]: {Colors.RESET}").strip() or '0'
+    wordlist = input(f"{Colors.INFO}[+] Wordlist [Press Enter for default]: {Colors.RESET}").strip()
+    
+    try:
+        delay = int(delay)
+        if delay < 0:
+            raise ValueError
+    except ValueError:
+        print(f"{Colors.ERROR}[!] Delay must be a positive integer")
+        sleep(2)
+        return run()
+    
+    paths = load_wordlist(wordlist)
+    if not paths:
+        return run()
+    
+    proxy_dict = None
+    if proxy:
         try:
-            delay = int(delay)
-            if delay < 0:
-                raise ValueError
+            proto, addr = proxy.split('-', 1)
+            proxy_dict = {proto: addr}
         except ValueError:
-            print(f"{Colors.ERROR}[!] Invalid delay value")
+            print(f"{Colors.ERROR}[!] Invalid proxy format. Example: http-1.2.3.4:8080")
             sleep(2)
-            continue
-        
-        paths = load_wordlist(wordlist)
-        if not paths:
-            continue
-        
-        proxy_dict = None
-        if proxy:
-            try:
-                proto, addr = proxy.split('-', 1)
-                proxy_dict = {proto: addr}
-            except ValueError:
-                print(f"{Colors.ERROR}[!] Invalid proxy format")
-                sleep(2)
-                continue
-        
-        validated_url = validate_url(target)
-        if not validated_url:
-            print(f"{Colors.ERROR}[!] Invalid target URL")
-            sleep(2)
-            continue
-        
-        global_variants = generate_global_variants(validated_url)
-        print(f"\n{Colors.INFO}[i] Generated {len(global_variants)} global variants")
-        
-        results = []
-        total_requests = len(global_variants) * len(paths)
-        progress = tqdm(
-            total=total_requests,
-            unit="req",
-            desc=f"{Colors.INFO}Progress",
-            dynamic_ncols=True,
-            bar_format="{l_bar}%s{bar}%s{r_bar}" % (Colors.INFO, Colors.RESET)
-        )
-        
-        for url in global_variants:
-            scan_worker(url, proxy_dict, delay, paths, results, progress)
-        
-        progress.close()
-        
-        print(f"\n{Colors.BOLD}{'='*60}")
-        if results:
-            print(f"{Colors.SUCCESS}[+] Found {len(results)} admin panels:")
-            for url, status in results:
-                print(f"  {Colors.WARNING}-{Colors.RESET} {url} (Status: {status})")
-        else:
-            print(f"{Colors.ERROR}[!] No admin panels found")
-        
-        input(f"\n{Colors.INFO}Press Enter to return to menu...")
+            return run()
+    
+    validated_url = validate_url(target)
+    if not validated_url:
+        print(f"{Colors.ERROR}[!] Invalid target URL")
+        sleep(2)
+        return run()
+    
+    global_variants = generate_global_variants(validated_url)
+    print(f"\n{Colors.INFO}[i] Generated {len(global_variants)} global variants")
+    
+    results = []
+    total_requests = len(global_variants) * len(paths)
+    progress = tqdm(
+        total=total_requests,
+        unit="req",
+        desc=f"{Colors.INFO}Progress",
+        dynamic_ncols=True,
+        bar_format="{l_bar}%s{bar}%s{r_bar}" % (Colors.INFO, Colors.RESET)
+    )
+    
+    for url in global_variants:
+        scan_worker(url, proxy_dict, delay, paths, results, progress)
+    
+    progress.close()
+    
+    print(f"\n{Colors.BOLD}{'='*60}")
+    if results:
+        print(f"{Colors.SUCCESS}[+] Found {len(results)} admin panels:")
+        for url, status in results:
+            print(f"  {Colors.WARNING}-{Colors.RESET} {url} (Status: {status})")
+    else:
+        print(f"{Colors.ERROR}[!] No admin panels found")
+    
+    input(f"\n{Colors.INFO}Press Enter to return to main menu...")
+    return  # Return control to main.py
 
 if __name__ == "__main__":
     run()
