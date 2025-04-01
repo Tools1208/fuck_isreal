@@ -9,41 +9,53 @@ from queue import Queue
 from time import sleep
 from tqdm import tqdm
 import pyfiglet
+from colorama import Fore, Style, init
 
-# ثوابت الألوان
-COLORS = {
-    'HEADER': '\033[95m',
-    'BLUE': '\033[94m',
-    'CYAN': '\033[96m',
-    'GREEN': '\033[92m',
-    'YELLOW': '\033[93m',
-    'RED': '\033[91m',
-    'BOLD': '\033[1m',
-    'UNDERLINE': '\033[4m',
-    'END': '\033[0m'
-}
+# تهيئة الألوان
+init(autoreset=True)
 
-# الثوابت العامة
-BANNER = r"""
- ______   __  __     ______     __    __     ______     ______  
-/\  == \ /\ \_\ \   /\  ___\   /\ "-./  \   /\  __ \   /\__  _\ 
-\ \  _-/ \ \  __ \  \ \  __\   \ \ \-./\ \  \ \ \/\ \  \/_/\ \/ 
- \ \_\    \ \_\ \_\  \ \_____\  \ \_\ \ \_\  \ \_____\    \ \_\ 
-  \/_/     \/_/\/_/   \/_____/   \/_/  \/_/   \/_____/     \/_/ 
-"""
-VERSION = "3.0 Pro"
-DEFAULT_WORDLIST = os.path.join(os.path.dirname(__file__), 'list.txt')
+# الثوابت
+VERSION = "4.0 Pro"
+DEFAULT_WORDLIST = "list.txt"
+DEFAULT_PATHS = [
+    "admin", "admin.php", "admin.html", "admin/login.php",
+    "administrator", "login", "wp-admin", "admin/dashboard",
+    "dashboard", "admin_area", "controlpanel", "cp"
+]
+
+# ألوان خاصة
+class Colors:
+    HEADER = Fore.MAGENTA
+    INFO = Fore.CYAN
+    SUCCESS = Fore.GREEN
+    WARNING = Fore.YELLOW
+    ERROR = Fore.RED
+    BOLD = Style.BRIGHT
+    RESET = Style.RESET_ALL
+
+def create_default_wordlist():
+    """إنشاء قائمة مسارات افتراضية إذا لم تكن موجودة"""
+    if not os.path.exists(DEFAULT_WORDLIST):
+        with open(DEFAULT_WORDLIST, 'w') as f:
+            for path in DEFAULT_PATHS:
+                f.write(f"{path}\n")
+        print(f"{Colors.SUCCESS}[+] تم إنشاء قائمة مسارات افتراضية: {DEFAULT_WORDLIST}")
 
 def display_banner():
-    """عرض الواجهة الرئيسية مع الألوان"""
+    """عرض الواجهة الرئيسية الملونة"""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(COLORS['CYAN'], end='')
-    print(pyfiglet.figlet_format("AdminFinder", font="slant", justify="center"))
-    print(COLORS['YELLOW'] + BANNER + COLORS['END'])
-    print(f"{COLORS['RED']}{'='*60}{COLORS['END']}")
-    print(f"{COLORS['GREEN']}{'Telegram: https://t.me/AnonymousJordan'.center(60)}{COLORS['END']}")
-    print(f"{COLORS['CYAN']}Version: {VERSION}{COLORS['END']}".center(60))
-    print(f"{COLORS['RED']}{'='*60}{COLORS['END']}\n")
+    print(Colors.HEADER + pyfiglet.figlet_format("AdminFinder", font="slant"))
+    print(Colors.INFO + """
+    ______   __  __     ______     __    __     ______     ______  
+   /\  == \ /\ \_\ \   /\  ___\   /\ "-./  \   /\  __ \   /\__  _\ 
+   \ \  _-/ \ \  __ \  \ \  __\   \ \ \-./\ \  \ \ \/\ \  \/_/\ \/ 
+    \ \_\    \ \_\ \_\  \ \_____\  \ \_\ \ \_\  \ \_____\    \ \_\ 
+     \/_/     \/_/\/_/   \/_____/   \/_/  \/_/   \/_____/     \/_/ 
+    """.strip())
+    print(f"{Colors.WARNING}{'='*60}")
+    print(f"{Colors.INFO}{'Telegram: https://t.me/AnonymousJordan'.center(60)}")
+    print(f"{Colors.HEADER}Version: {VERSION}".center(60))
+    print(f"{Colors.WARNING}{'='*60}")
 
 def validate_url(url):
     """التحقق من صحة الرابط وتنسيقه"""
@@ -57,10 +69,10 @@ def validate_url(url):
 def generate_url_variants(base_url):
     """إنشاء متغيرات مختلفة من الرابط للمسح الشامل"""
     parsed = urllib.parse.urlparse(base_url)
-    variants = []
     schemes = ["http", "https"] if parsed.scheme not in ["http", "https"] else [parsed.scheme]
     subdomains = ["", "www."]
     
+    variants = []
     for scheme in schemes:
         for sub in subdomains:
             netloc = sub + parsed.netloc.split(':', 1)[0]
@@ -75,14 +87,18 @@ def generate_url_variants(base_url):
     return list(set(variants))
 
 def load_wordlist(wordlist_path):
-    """تحميل قائمة المسارات من الملف"""
-    if not wordlist_path:
-        return []
-        
-    if not os.path.isfile(wordlist_path):
-        print(f"{COLORS['RED']}[!] خطأ: ملف القائمة غير موجود '{wordlist_path}'{COLORS['END']}")
+    """تحميل قائمة المسارات مع إنشاء افتراضي إذا لزم الأمر"""
+    # إنشاء القائمة الافتراضية إذا لم تكن موجودة
+    if not os.path.exists(DEFAULT_WORDLIST):
+        create_default_wordlist()
+    
+    # استخدام القائمة المحددة أو الافتراضية
+    final_path = wordlist_path or DEFAULT_WORDLIST
+    if not os.path.exists(final_path):
+        print(f"{Colors.ERROR}[!] خطأ: لا يمكن العثور على الملف: {final_path}")
         return None
-    with open(wordlist_path, 'r') as f:
+    
+    with open(final_path, 'r') as f:
         return [line.strip() for line in f if line.strip()]
 
 def scan_worker(url, proxy, delay, paths, results, progress):
@@ -101,16 +117,16 @@ def scan_worker(url, proxy, delay, paths, results, progress):
                 if 200 <= response.status_code < 300:
                     with lock:
                         results.append((full_url, response.status_code))
-                        print(f"\r{COLORS['GREEN']}[+] تم العثور: {full_url} (حالة: {response.status_code}){COLORS['END']}")
+                        print(f"\r{Colors.SUCCESS}[+] تم العثور: {full_url} (حالة: {response.status_code})")
                 progress.update(1)
                 sleep(delay)
-            except (ConnectionError, InvalidSchema, MissingSchema):
+            except Exception:
                 progress.update(1)
                 continue
             finally:
                 queue.task_done()
     
-    # بدء خيوط العمل
+    # بدء الخيوط
     threads = []
     for _ in range(10):
         thread = Thread(target=worker)
@@ -118,11 +134,11 @@ def scan_worker(url, proxy, delay, paths, results, progress):
         thread.start()
         threads.append(thread)
     
-    # إضافة المسارات إلى قائمة الانتظار
+    # إضافة المسارات للتنفيذ
     for path in paths:
         queue.put(path)
     
-    # انتظار اكتمال جميع المهام
+    # انتظار انتهاء المهام
     queue.join()
     
     # إيقاف الخيوط
@@ -132,90 +148,90 @@ def scan_worker(url, proxy, delay, paths, results, progress):
         thread.join()
 
 def main():
-    try:
-        while True:
-            display_banner()
-            print(f"{COLORS['YELLOW']}أدخل '99' في أي وقت للعودة للقائمة الرئيسية{COLORS['END']}\n")
-            
-            # الحصول على مدخلات المستخدم مع إمكانية العودة
-            target = input(f"{COLORS['CYAN']}[+] أدخل الهدف (مثال: example.com): {COLORS['END']}").strip()
-            if target == '99':
-                continue
-                
-            proxy_input = input(f"{COLORS['CYAN']}[+] أدخل البروكسي (http-1.2.3.4:8080): {COLORS['END']}").strip()
-            if proxy_input == '99':
-                continue
-                
-            delay = input(f"{COLORS['CYAN']}[+] أدخل التأخير بين الطلبات (ثانية) [0]: {COLORS['END']}").strip()
-            if delay == '99':
-                continue
+    create_default_wordlist()
+    
+    while True:
+        display_banner()
+        print(f"""
+{Colors.INFO}[01]{Colors.RESET} بدء مسح لوحة التحكم
+{Colors.WARNING}[99]{Colors.RESET} الخروج من الأداة
+        """.strip())
+        
+        choice = input(f"\n{Colors.BOLD}اختر رقما: {Colors.RESET}").strip()
+        if choice == '99':
+            sys.exit(0)
+        elif choice != '01':
+            continue
+        
+        # الحصول على المدخلات
+        target = input(f"\n{Colors.INFO}[+] أدخل الهدف (مثال: example.com): {Colors.RESET}").strip()
+        proxy = input(f"{Colors.INFO}[+] أدخل البروكسي (http-1.2.3.4:8080): {Colors.RESET}").strip()
+        delay = input(f"{Colors.INFO}[+] التأخير بين الطلبات (ثانية) [0]: {Colors.RESET}").strip() or '0'
+        wordlist = input(f"{Colors.INFO}[+] مسار القائمة [اضغط Enter للتخطي]: {Colors.RESET}").strip()
+        
+        # معالجة المدخلات
+        try:
+            delay = int(delay)
+            if delay < 0:
+                raise ValueError
+        except ValueError:
+            print(f"{Colors.ERROR}[!] خطأ: التأخير يجب أن يكون عددًا صحيحًا موجبًا")
+            sleep(2)
+            continue
+        
+        # تحميل القائمة
+        paths = load_wordlist(wordlist)
+        if not paths:
+            continue
+        
+        # إعداد البروكسي
+        proxy_dict = None
+        if proxy:
             try:
-                delay = int(delay) if delay else 0
-                if delay < 0:
-                    raise ValueError
+                proto, addr = proxy.split('-', 1)
+                proxy_dict = {proto: addr}
             except ValueError:
-                print(f"{COLORS['RED']}[!] خطأ: التأخير يجب أن يكون عددًا صحيحًا موجبًا{COLORS['END']}")
+                print(f"{Colors.ERROR}[!] خطأ في تنسيق البروكسي. المثال: http-1.2.3.4:8080")
                 sleep(2)
                 continue
-                
-            wordlist = input(f"{COLORS['CYAN']}[+] أدخل مسار القائمة (اضغط Enter للتخطي): {COLORS['END']}").strip()
-            if wordlist == '99':
-                continue
-            wordlist = wordlist or DEFAULT_WORDLIST
-                
-            # التحقق من الرابط المستهدف
-            validated_url = validate_url(target)
-            if not validated_url:
-                print(f"{COLORS['RED']}[!] خطأ: رابط الهدف غير صالح{COLORS['END']}")
-                sleep(2)
-                continue
-                
-            # تحميل القائمة
-            paths = load_wordlist(wordlist)
-            if not paths:
-                print(f"{COLORS['YELLOW']}[!] تستخدم القائمة الافتراضية: {DEFAULT_WORDLIST}{COLORS['END']}")
-                sleep(2)
-                paths = load_wordlist(DEFAULT_WORDLIST)
-                
-            # إعداد البروكسي
-            proxy = None
-            if proxy_input:
-                try:
-                    proto, addr = proxy_input.split('-', 1)
-                    proxy = {proto: addr}
-                except ValueError:
-                    print(f"{COLORS['RED']}[!] خطأ في تنسيق البروكسي. المثال: http-1.2.3.4:8080{COLORS['END']}")
-                    sleep(2)
-                    continue
-            
-            # إنشاء متغيرات الرابط
-            url_variants = generate_url_variants(validated_url)
-            print(f"\n{COLORS['YELLOW']}[i] جاري مسح {len(url_variants)} متغير رابط...{COLORS['END']}")
-            
-            # بدء المسح
-            results = []
-            total_requests = len(url_variants) * len(paths)
-            progress = tqdm(total=total_requests, unit="req", desc="التقدم", dynamic_ncols=True, 
-                           bar_format="{l_bar}%s{bar}%s{r_bar}" % (COLORS['CYAN'], COLORS['END']))
-            
-            for url in url_variants:
-                scan_worker(url, proxy, delay, paths, results, progress)
-            
-            progress.close()
-            
-            # عرض النتائج
-            if results:
-                print(f"\n{COLORS['GREEN']}[+] تم العثور على لوحات تحكم:{COLORS['END']}")
-                for url, status in results:
-                    print(f"  {COLORS['YELLOW']}-{COLORS['END']} {url} (حالة: {status})")
-            else:
-                print(f"\n{COLORS['RED']}[!] لم يتم العثور على لوحات تحكم{COLORS['END']}")
-            
-            input(f"\n{COLORS['CYAN']}اضغط Enter للعودة للقائمة الرئيسية...{COLORS['END']}")
-                
-    except KeyboardInterrupt:
-        print(f"\n{COLORS['RED']}[!] تم إيقاف الأداة بواسطة المستخدم{COLORS['END']}")
-        sys.exit(0)
+        
+        # التحقق من الرابط
+        validated_url = validate_url(target)
+        if not validated_url:
+            print(f"{Colors.ERROR}[!] خطأ: رابط الهدف غير صالح")
+            sleep(2)
+            continue
+        
+        # إنشاء متغيرات الرابط
+        url_variants = generate_url_variants(validated_url)
+        print(f"\n{Colors.INFO}[i] جاري مسح {len(url_variants)} متغير رابط...")
+        
+        # بدء المسح
+        results = []
+        total_requests = len(url_variants) * len(paths)
+        progress = tqdm(
+            total=total_requests,
+            unit="req",
+            desc=f"{Colors.INFO}التقدم",
+            dynamic_ncols=True,
+            bar_format="{l_bar}%s{bar}%s{r_bar}" % (Colors.INFO, Colors.RESET)
+        )
+        
+        for url in url_variants:
+            scan_worker(url, proxy_dict, delay, paths, results, progress)
+        
+        progress.close()
+        
+        # عرض النتائج
+        print(f"\n{Colors.BOLD}{'='*60}")
+        if results:
+            print(f"{Colors.SUCCESS}[+] تم العثور على {len(results)} لوحة تحكم:")
+            for url, status in results:
+                print(f"  {Colors.WARNING}-{Colors.RESET} {url} (حالة: {status})")
+        else:
+            print(f"{Colors.ERROR}[!] لم يتم العثور على أي لوحات تحكم")
+        
+        input(f"\n{Colors.INFO}اضغط Enter للعودة للقائمة الرئيسية...")
 
 if __name__ == "__main__":
     main()
