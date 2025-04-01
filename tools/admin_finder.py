@@ -108,7 +108,7 @@ def load_wordlist(wordlist_path):
     with open(wordlist_path, 'r') as f:
         return [line.strip() for line in f if line.strip()]
 
-def scan_worker(url, proxy, delay, paths, results, progress):
+def scan_worker(url, proxy, delay, paths, results, progress, all_urls):
     """Advanced multithreaded scanning worker"""
     lock = Lock()
     queue = Queue()
@@ -121,6 +121,9 @@ def scan_worker(url, proxy, delay, paths, results, progress):
                 
             try:
                 full_url = f"{url}{path}"
+                with lock:
+                    all_urls.append(full_url)
+                    
                 response = requests.get(
                     full_url,
                     proxies=proxy,
@@ -192,26 +195,43 @@ def run():
     print(f"{Colors.INFO}[+] Generating global domain variants...")
     urls_to_scan = generate_global_variants(target_url)
     
+    # Show generated base URLs
+    print(f"{Colors.INFO}[+] Generated {len(urls_to_scan)} base URLs:")
+    for url in urls_to_scan:
+        print(f"    {Colors.INFO}{url}")
+        
     # Prepare scanning
     results = []
+    all_urls = []
     total_requests = len(wordlist) * len(urls_to_scan)
     progress = tqdm(total=total_requests, unit="req", dynamic_ncols=True)
     
     try:
         for url in urls_to_scan:
-            scan_worker(url, proxies, 0.1, wordlist, results, progress)
+            scan_worker(url, proxies, 0.1, wordlist, results, progress, all_urls)
             
     except KeyboardInterrupt:
         print(f"\n{Colors.WARNING}[!] Scan interrupted by user")
     finally:
         progress.close()
         
+    # Show all scanned URLs
+    print(f"\n{Colors.INFO}[+] Total URLs scanned: {len(all_urls)}")
+    print(f"{Colors.INFO}[+] Full URL list:")
+    for scanned_url in all_urls:
+        print(f"    {scanned_url}")
+        
+    # Show results
     if results:
         print(f"\n{Colors.SUCCESS}[+] Scan completed. Found {len(results)} admin pages:")
         for url, status in results:
             print(f"    {Colors.SUCCESS}{status}: {url}")
     else:
         print(f"\n{Colors.WARNING}[!] No admin pages found")
+        
+    # Wait for user input before exiting
+    input(f"\n{Colors.INFO}[!] Press Enter to exit...")
+    sys.exit()
 
 if __name__ == "__main__":
     run()
