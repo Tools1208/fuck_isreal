@@ -3,7 +3,7 @@ import os
 import sys
 from colorama import Fore, Style, init
 import pyfiglet
-from tools import open_files, admin_finder,
+from tools import open_files, admin_finder
 
 # ───═ Initialization ═──
 init(autoreset=True)
