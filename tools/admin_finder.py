@@ -7,7 +7,6 @@ import sys
 import os
 import re
 import tempfile
-import run
 import webbrowser
 import time
 import pyfiglet
