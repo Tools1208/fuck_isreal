@@ -21,8 +21,8 @@ def main():
     display_banner()
     
     tools = [
-        ("01", "File Operations", "Manage files", open_files.run),
-        ("02", "Admin Finder", "Find admin panels", admin_finder.run),
+        ("01", "File Operations", "Manage files", open_files.py),
+        ("02", "Admin Finder", "Find admin panels", admin_finder.py),
         ("99", "Exit", "Exit program", sys.exit)
     ]
 
