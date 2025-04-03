@@ -1,82 +1,89 @@
 #!/usr/bin/env python3
 import os
 import sys
-from colorama import Fore, Style, init
-import pyfiglet
-from tools import open_files, admin_finder
+from time import sleep
 
-# ───═ Initialization ═──
-init(autoreset=True)
-WIDTH = 80
+def check_system_dependencies():
+    # Check figlet installation
+    if os.system("which figlet > /dev/null") != 0:
+        print("\033[1;31mError: figlet is not installed!\033[0m")
+        print("Install using: sudo apt install figlet")
+        sys.exit(1)
+    
+    # Check lolcat installation
+    if os.system("which lolcat > /dev/null") != 0:
+        print("\033[1;31mError: lolcat is not installed!\033[0m")
+        print("Install using: sudo apt install lolcat")
+        sys.exit(1)
 
-# ───═ Banner Design ═──
-def display_banner():
-    os.system('clear')
-    banner_text = pyfiglet.figlet_format("Fuck Isreal", font="slant")
-    gradient_banner = []
-    for line in banner_text.split('\n'):
-        gradient_line = ""
-        for i, char in enumerate(line):
-            r = 255
-            g = min(50 + i*2, 255)
-            b = 0
-            gradient_line += f"\033[38;2;{r};{g};{b}m{char}"
-        gradient_banner.append(gradient_line)
-    print('\n'.join(gradient_banner))
-    print(Fore.RED + "="*WIDTH)
-    print(Fore.YELLOW + "Fuck Israel By: Anonymous Jordan Team".center(WIDTH))
-    print(Fore.CYAN + "https://t.me/AnonymousJordan".center(WIDTH))
-    print(Fore.RED + "="*WIDTH + "\n")
+def check_python_dependencies():
+    required = ['requests', 'cryptography', 'tqdm', 'pyfiglet', 'colorama']
+    missing = []
+    
+    for package in required:
+        try:
+            __import__(package)
+        except ImportError:
+            missing.append(package)
+    
+    if missing:
+        print("\033[1;33m[!] Installing missing Python dependencies...\033[0m")
+        os.system(f"pip3 install {' '.join(missing)} --break-system-packages")
+        print("\033[1;32m[+] Dependencies installed successfully!\033[0m")
+        sleep(2)
+        os.execv(sys.executable, ['python3'] + sys.argv)
 
-# ───═ Main Menu ═──
+# Run system checks first
+check_system_dependencies()
+check_python_dependencies()
+
+# Import tools after dependency checks
+from tools.open_files import run as open_files
+from tools.admin_finder import run as admin_finder
+
+def display_header():
+    os.system('clear && figlet Fuck_Isreal | lolcat 2>/dev/null || figlet Fuck_Isreal')
+    print("\033[1;31mFuck Isreal By  : Anonymous Jordan Team\033[0m".center(60))
+    print("\033[1;32mLink  : https://t.me/AnonymousJordan\033[0m".center(60))
+    print("\n")
+
+def main_menu():
+    display_header()
+    tools = {
+        '01': ("Open Files", open_files),
+        '02': ("Admin Finder", admin_finder),
+    }
+    
+    # Print available tools
+    print(f"\033[1;33m[01]\033[0m Open Files\t\t\033[1;33m[02]\033[0m Admin Finder")
+    print(f"\033[1;31m[99]\033[0m Exit\n")
+    
+    return tools
+
 def main():
-    display_banner()
-    
-    tools = [
-        ("01", "File Operations", "Manage files", open_files.run),
-        ("02", "Admin Finder", "Discover admin panels", admin_finder.run),
-        ("99", "Exit", "Terminate the program", sys.exit)
-    ]
-
-    # ───═ Menu Box ═──
-    print(Fore.MAGENTA + "╒" + "═"*(WIDTH-2) + "╕")
-    print(Fore.MAGENTA + "│" + 
-          f"{'ID'.center(8)}" + 
-          f"{'Tool Name'.center(25)}" + 
-          f"{'Description'.center(35)}" + 
-          f"{'Status'.center(10)}" + 
-          Fore.MAGENTA + "│")
-    print(Fore.MAGENTA + "├" + "─"*8 + "┼" + "─"*25 + "┼" + "─"*35 + "┼" + "─"*10 + "┤")
-    
-    for tool in tools:
-        status = f"{Fore.GREEN}Active" if tool[3] else f"{Fore.RED}Inactive"
-        print(Fore.MAGENTA + "│" + 
-              f"{Fore.YELLOW}{tool[0].center(6)} " + 
-              f"{Fore.CYAN}{tool[1].ljust(23)} " + 
-              f"{Fore.WHITE}{tool[2].ljust(33)} " + 
-              f"{status.ljust(8)} " + 
-              Fore.MAGENTA + "│")
-    print(Fore.MAGENTA + "╘" + "═"*(WIDTH-2) + "╛")
-    
-    try:
-        choice = input(f"\n{Fore.YELLOW}[{Fore.RED}#{Fore.YELLOW}] Select Option ({Fore.CYAN}01-03{Fore.YELLOW}/{Fore.RED}99{Fore.YELLOW}): ").strip()
+    while True:
+        tools = main_menu()
+        choice = input("\033[1;35mChoose an option: \033[0m").strip()
         
-        for tool in tools:
-            if choice == tool[0]:
-                print(f"\n{Fore.GREEN}{'='*30}")
-                print(f"{Fore.YELLOW}[{Fore.GREEN}+{Fore.YELLOW}] Launching {tool[1]}...")
-                print(f"{Fore.GREEN}{'='*30}\n")
-                time.sleep(1)
-                tool[3]()
-                return
-        
-        print(f"\n{Fore.RED}[!] Invalid selection, returning to menu...")
-        time.sleep(2)
-    
-    except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}[{Fore.RED}!{Fore.YELLOW}] Operation cancelled by user")
-        time.sleep(1)
+        if choice == '99':
+            print("\033[1;31mExiting...\033[0m")
+            sleep(1)
+            sys.exit()
+            
+        elif choice in tools:
+            os.system('clear')
+            try:
+                tools[choice][1]()
+            except Exception as e:
+                print(f"\033[1;31mError: {str(e)}\033[0m")
+                sleep(3)
+            finally:
+                os.system('clear')
+                
+        else:
+            print("\033[1;31mInvalid choice! Please try again.\033[0m")
+            sleep(1)
+            os.system('clear')
 
 if __name__ == "__main__":
-    while True:
-        main()
+    main()
