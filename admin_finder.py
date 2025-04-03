@@ -27,6 +27,7 @@ class AdminHunterX:
         self.master.title("WebAdmin Auditor Pro v9.11")
         self.master.geometry("800x600")
         self.master.resizable(False, False)
+        self.master.protocol("WM_DELETE_WINDOW", self.exit_app)  # Handle window close button
         
         self.common_paths = [
             "/admin", "/wp-admin", "/administrator", "/login",
@@ -55,8 +56,9 @@ class AdminHunterX:
         self.scan_btn = ttk.Button(input_frame, text="L33T SCAN", command=self.start_scan)
         self.scan_btn.pack(side=tk.LEFT, padx=5)
         
-        self.back_btn = ttk.Button(input_frame, text="MAIN MENU", command=self.fake_main_menu)
-        self.back_btn.pack(side=tk.LEFT, padx=5)
+        # Change MAIN MENU button to exit the application
+        self.exit_btn = ttk.Button(input_frame, text="EXIT", command=self.exit_app)
+        self.exit_btn.pack(side=tk.LEFT, padx=5)
         
         # Results Section
         results_frame = ttk.Frame(main_frame)
@@ -121,9 +123,6 @@ class AdminHunterX:
         keywords = ['login', 'admin', 'dashboard', 'control panel']
         return any(keyword in content.lower() for keyword in keywords)
 
-    def fake_main_menu(self):
-        messagebox.showinfo("LOL", r"Feature not implemented\n¯\_(ツ)_/¯")
-
     def validate_url(self):
         url = self.url_entry.get().strip()
         regex = re.compile(
@@ -137,6 +136,11 @@ class AdminHunterX:
             return False
         return True
 
+    def exit_app(self):
+        """Gracefully exit the application"""
+        self.master.quit()
+        sys.exit()
+
 if __name__ == "__main__":
     try:
         root = tk.Tk()
@@ -144,3 +148,4 @@ if __name__ == "__main__":
         root.mainloop()
     except Exception as e:
         messagebox.showerror("Fatal Error", f"Application crashed: {str(e)}")
+        sys.exit(1)
